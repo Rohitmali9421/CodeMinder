@@ -4,6 +4,8 @@ import Sidebar from '../Components/SideBar';
 import Workspace from '../Components/Workspace';
 import Explore from '../Components/Explore';
 import Analysis from '@/Components/Analysis';
+import MySheets from '@/Components/MySheets';
+import Notes from '@/Components/Notes';
 
 function QuestionTracker() {
     const [searchParams] = useSearchParams();
@@ -16,8 +18,8 @@ function QuestionTracker() {
             {/* Conditional rendering using && */}
             {tab === "workspace" && <Workspace/>}
             {tab === "explore" && <Explore/>}
-            {tab === "mySheets" && <h1>mySheets</h1>}
-            {tab === "notes" && <h1>notes</h1>}
+            {tab === "mySheets" && <h1><MySheets/></h1>}
+            {tab === "notes" && <h1><Notes/></h1>}
             {tab === "analysis" && <Analysis/>}
         </div>
     );
