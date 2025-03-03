@@ -20,7 +20,7 @@ const HeroSection = () => {
             {/* Subtitle */}
             <div className="font-[550] text-gray-500 dark:text-gray-400 md:text-3xl">
                 <p>
-                    <span className="dark:text-white">Code</span>
+                    <span className="dark:text-black">Code</span>
                     <span className="text-blue-600">Minder </span>
                     helps you navigate and track your <br /> coding journey to success
                 </p>
@@ -31,13 +31,13 @@ const HeroSection = () => {
                 <div className="grid grid-cols-2 gap-2 mx-auto w-fit">
                     <a
                         href="/question-tracker"
-                        className="p-2 rounded border-2 border-gray-200 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300 text-center hover:bg-gray-50 dark:hover:bg-gray-800"
+                        className="p-2 rounded border-2 border-gray-200 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300 text-center hover:bg-gray-50 dark:hover:bg-gray-800 "
                     >
                         Question Tracker
                     </a>
                     <a
                         href="/profile/Rohitmali9421"
-                        className="p-2 rounded font-medium text-white bg-blue-600 flex items-center justify-center gap-2"
+                        className="p-2 rounded font-medium text-white bg-orange-600 flex items-center justify-center gap-2"
                     >
                         Profile Tracker
                         <svg
