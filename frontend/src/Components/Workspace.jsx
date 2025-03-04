@@ -22,42 +22,26 @@ const Workspace = () => {
                         <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                     </div>
 
-                    {/* Filters */}
-                    {["Difficulty", "Status", "Topics", "Companies", "Custom Tags"].map((filter, index) => (
+                    
+                    {["Difficulty","Topics"].map((filter, index) => (
                         <Select key={index}>
                             <SelectTrigger className="w-32 flex items-center">
                                 <SelectValue placeholder={filter} />
 
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={filter}>{filter}</SelectItem>
+                                <SelectItem value="Easy">Easy</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="Hard">Hard</SelectItem>
                             </SelectContent>
                         </Select>
                     ))}
 
-                    {/* Favorites Button */}
-                    <Button variant="outline" className="flex items-center gap-1">
-                        <FaStar className="text-yellow-500" size={16} /> Favourites
-                    </Button>
+                    
 
-                    {/* Sorting Buttons */}
-                    <div className="flex gap-2">
-                        <Button variant="outline">Latest</Button>
-                        <Button variant="outline">Oldest</Button>
-                        <Select>
-                            <SelectTrigger className="w-24 flex items-center">
-                                <SelectValue placeholder="Sort By" />
+                    
 
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="latest">Latest</SelectItem>
-                                <SelectItem value="oldest">Oldest</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Date Button */}
-                    <Button variant="outline">Date</Button>
+                    
 
                     {/* Import Button */}
                     <div className="flex-1 flex justify-end">

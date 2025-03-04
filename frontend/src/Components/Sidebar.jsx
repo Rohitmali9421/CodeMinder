@@ -33,7 +33,7 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="lg:w-[300px] w-full lg:h-screen flex flex-col justify-between bg-white border-r">
+        <aside className="lg:w-[300px] w-full lg:h-screen flex flex-col justify-between bg-white border-r-2">
             {/* Small screen dropdown menu */}
             <div className="lg:hidden px-2">
                 <Button
