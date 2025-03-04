@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Editor } from "@tinymce/tinymce-react";
 import { FiLink } from "react-icons/fi";
@@ -28,17 +28,7 @@ export default function Notes() {
                             type="text"
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" className="flex items-center gap-2">
-                            <Filter size={18} /> Filter
-                        </Button>
-                        <Button variant="outline" className="p-2">
-                            <ChevronLeft size={20} />
-                        </Button>
-                        <Button disabled className="p-2 opacity-50 cursor-not-allowed">
-                            <ChevronRight size={20} />
-                        </Button>
-                    </div>
+                    
                 </div>
 
                 {/* Main Content - Sidebar & Notes */}
