@@ -1,6 +1,6 @@
 import express from "express";
-import { handleUpdateNotes } from "../Controller/NotesController.js";
-import { handleGetNoteById } from "../Controller/QuestionController.js";
+import { handleGetNoteById, handleUpdateNotes } from "../Controller/NotesController.js";
+
 
 
 const router = express.Router();
