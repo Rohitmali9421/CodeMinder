@@ -32,7 +32,8 @@ async function handleLogin(req, res) {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email }).select('-sheets');
+
     if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -47,6 +48,9 @@ async function handleLogin(req, res) {
       .json({ error: "Server error. Please try again later." });
   }
 }
+
+// handle get user
+// handle question solved bu user
 
 
 export { handleSignUp, handleLogin };
