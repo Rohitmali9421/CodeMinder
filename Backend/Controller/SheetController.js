@@ -12,7 +12,6 @@ const handleCreateSheet = async (req, res) => {
     if (!title || !author) {
       return res.status(400).json({ error: "Title and Author are required" });
     }
-
     // Check if the author exists
     const user = await User.findById(author);
     if (!user) {
@@ -218,10 +217,46 @@ const handleGetSheetById = async (req, res) => {
     });
   }
 };
-
+const handleGetFollowedSheets = async (req, res) => {
+    try {
+      const { userId } = req.params; // Extract user ID from request params
+  
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+  
+      // Find user and populate their followed sheets
+      const user = await User.findById(userId).populate("sheets.sheet_id");
+  
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      // Extract and structure followed sheets
+      const followedSheets = user.sheets.map(({ sheet_id, solved_questions }) => ({
+        id: sheet_id._id,
+        title: sheet_id.title,
+        description: sheet_id.description,
+        totalQuestions: sheet_id.questions.length,
+        solvedQuestions: solved_questions.length,
+      }));
+  
+      return res.status(200).json({
+        success: true,
+        data: followedSheets,
+      });
+    } catch (error) {
+      console.error("Error fetching followed sheets:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Server error. Please try again later.",
+      });
+    }
+  };
 export {
   handleCreateSheet,
   handleFollowSheet,
   handleGetAllSheets,
   handleGetSheetById,
+  handleGetFollowedSheets
 };

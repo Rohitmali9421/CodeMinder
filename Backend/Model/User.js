@@ -14,9 +14,16 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  profilePic: {
+    type: Object,
+    default: {
+      public_id: "amvfmhjviqpbmvu4txsf",
+      url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqf0Wx4wmsKfLYsiLdBx6H4D8bwQBurWhx5g&s",
+    },
+  },
   sheets: [
     {
-      sheet_id: { type: mongoose.Schema.Types.ObjectId, ref: "Sheet" }, 
+      sheet_id: { type: mongoose.Schema.Types.ObjectId, ref: "Sheet" },
       solved_questions: [
         {
           question_id: {
