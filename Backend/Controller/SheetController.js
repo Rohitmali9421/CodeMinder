@@ -2,6 +2,7 @@ import Sheet from "../Model/Sheet.js";
 import User from "../Model/User.js";
 import axios from "axios";
 import Question from "../Model/Question.js";
+import Notes from "../Model/Notes.js";
 
 // **********************Create Sheet**************************
 const handleCreateSheet = async (req, res) => {
@@ -100,8 +101,8 @@ const handleCreateSheet = async (req, res) => {
 // **********************Follow Sheet**************************
 const handleFollowSheet = async (req, res) => {
   try {
-    const { userId, sheetId } = req.body;
-
+    const { sheetId } = req.body;
+    const userId = req.user.id;
     if (!userId || !sheetId) {
       return res
         .status(400)
@@ -167,96 +168,139 @@ const handleGetAllSheets = async (req, res) => {
     });
   }
 };
+
+
 const handleGetSheetById = async (req, res) => {
-  try {
-    const { id } = req.params; // Extract sheet ID
-    const sheet = await Sheet.findById(id).populate("questions"); // Populate questions
-
-    if (!sheet) {
-      return res.status(404).json({
-        success: false,
-        error: "Sheet not found",
-      });
-    }
-
-    const groupedQuestions = {};
-
-    // Group questions by topic
-    sheet.questions.forEach((question) => {
-      const topic = question.topic;
-
-      if (!groupedQuestions[topic]) {
-        groupedQuestions[topic] = [];
-      }
-
-      groupedQuestions[topic].push({
-        questionId: question._id,
-        title: question.title,
-        platform: question.platform,
-        url: question.url,
-        difficulty: question.difficulty,
-        topicTags: question.topicTags,
-      });
-    });
-
-    // Convert object to array format
-    const formattedResponse = Object.keys(groupedQuestions).map((topic) => ({
-      topic,
-      questions: groupedQuestions[topic],
-    }));
-
-    return res.status(200).json({
-      success: true,
-      data: formattedResponse,
-    });
-  } catch (error) {
-    console.error("Error fetching sheet by ID:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Server error. Please try again later.",
-    });
-  }
-};
-const handleGetFollowedSheets = async (req, res) => {
     try {
-      const { userId } = req.params; // Extract user ID from request params
+      const { sheetId } = req.body; // Read from request body
+      const userId = req.user.id;
   
-      if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
+      // Fetch the sheet along with its questions
+      const sheet = await Sheet.findById(sheetId).populate("questions");
+      if (!sheet) {
+        return res.status(404).json({
+          success: false,
+          error: "Sheet not found",
+        });
       }
   
-      // Find user and populate their followed sheets
-      const user = await User.findById(userId).populate("sheets.sheet_id");
-  
+      // Fetch user data to get solved questions
+      const user = await User.findById(userId);
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({
+          success: false,
+          error: "User not found",
+        });
       }
   
-      // Extract and structure followed sheets
-      const followedSheets = user.sheets.map(({ sheet_id, solved_questions }) => ({
-        id: sheet_id._id,
-        title: sheet_id.title,
-        description: sheet_id.description,
-        totalQuestions: sheet_id.questions.length,
-        solvedQuestions: solved_questions.length,
+      // Fetch all question notes for the user
+      const questionNotes = await Notes.find({ user: userId }).lean(); // Use .lean() for better performance
+  
+      // Ensure user.sheets exists before calling .find()
+      const userSheetProgress = Array.isArray(user.sheets) && user.sheets.length > 0
+        ? user.sheets.find((s) => s.sheet_id?.toString() === sheetId)
+        : null;
+  
+      // Create a set of solved question IDs for fast lookup
+      const solvedQuestionsSet = new Set();
+      if (userSheetProgress && Array.isArray(userSheetProgress.solved_questions)) {
+        userSheetProgress.solved_questions.forEach((q) => {
+          if (q.question_id) {
+            solvedQuestionsSet.add(q.question_id.toString());
+          }
+        });
+      }
+  
+      const groupedQuestions = {};
+  
+      // Group questions by topic and mark them as solved or not
+      sheet.questions.forEach((question) => {
+        const topic = question.topic;
+  
+        if (!groupedQuestions[topic]) {
+          groupedQuestions[topic] = [];
+        }
+  
+        // Find the note for this question (Fix: Use `question_id` as per your schema)
+        const note = questionNotes.find(
+          (n) => n.question_id.toString() === question._id.toString()
+        );
+  
+        groupedQuestions[topic].push({
+          questionId: question._id,
+          title: question.title,
+          platform: question.platform,
+          url: question.url,
+          difficulty: question.difficulty,
+          topicTags: question.topicTags,
+          status: solvedQuestionsSet.has(question._id.toString()) ? "Completed" : "Not Attempted",
+          noteId: note ? note._id : null, // Include noteId if available
+        });
+      });
+  
+      // Convert grouped questions into array format
+      const formattedResponse = Object.keys(groupedQuestions).map((topic) => ({
+        topic,
+        questions: groupedQuestions[topic],
       }));
   
       return res.status(200).json({
         success: true,
-        data: followedSheets,
+        data: formattedResponse,
       });
     } catch (error) {
-      console.error("Error fetching followed sheets:", error);
+      console.error("Error fetching sheet by ID:", error);
       return res.status(500).json({
         success: false,
         error: "Server error. Please try again later.",
       });
     }
   };
+  
+  
+
+const handleGetFollowedSheets = async (req, res) => {
+  try {
+    const userId = req.user.id; // Extract user ID from request params
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    // Find user and populate their followed sheets
+    const user = await User.findById(userId).populate("sheets.sheet_id");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Extract and structure followed sheets
+    const followedSheets = user.sheets.map(
+      ({ sheet_id, solved_questions }) => ({
+        id: sheet_id._id,
+        title: sheet_id.title,
+        description: sheet_id.description,
+        totalQuestions: sheet_id.questions.length,
+        solvedQuestions: solved_questions.length,
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: followedSheets,
+    });
+  } catch (error) {
+    console.error("Error fetching followed sheets:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error. Please try again later.",
+    });
+  }
+};
 export {
   handleCreateSheet,
   handleFollowSheet,
   handleGetAllSheets,
   handleGetSheetById,
-  handleGetFollowedSheets
+  handleGetFollowedSheets,
 };
