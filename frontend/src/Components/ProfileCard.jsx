@@ -31,7 +31,7 @@ export default function ProfileCard() {
               <Linkedin className="w-5 h-5" />
             </a>
           </div>
-          <Button className="mt-4 w-full">Get your Codolio Card</Button>
+          <Button className="mt-4 w-full">Get your CodeMinder Card</Button>
         </CardContent>
       </Card>
     </div>
