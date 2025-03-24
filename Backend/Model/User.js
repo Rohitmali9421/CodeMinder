@@ -30,12 +30,6 @@ const UserSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Question",
           },
-          notes_id: { type: mongoose.Schema.Types.ObjectId, ref: "Note" },
-          status: {
-            type: String,
-            enum: ["In Progress", "Completed"],
-            default: "In Progress",
-          },
         },
       ],
     },

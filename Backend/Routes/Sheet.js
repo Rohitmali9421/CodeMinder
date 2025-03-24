@@ -1,13 +1,15 @@
 import express from "express";
+import {authenticateToken} from "../Middlewares/Auth.js"
 import {  handleCreateSheet, handleFollowSheet,  handleGetAllSheets, handleGetFollowedSheets, handleGetSheetById } from "../Controller/SheetController.js";
-import { handleMarkQuestionAsSolved } from "../Controller/QuestionController.js";
+import { handleGetSolvedQuestionsByUser, handleMarkQuestionAsSolved } from "../Controller/QuestionController.js";
 const router = express.Router();
 
-router.post("/create", handleCreateSheet);
+// router.post("/create", handleCreateSheet);
 // router.post("/fetch-and-add-questions", handleFetchAndAddQuestions); 
-router.post("/follow", handleFollowSheet);
-router.post("/mark-solved", handleMarkQuestionAsSolved);
-router.get("/", handleGetAllSheets);
-router.get("/:id", handleGetSheetById);
-router.get("/followed-sheets/:userId", handleGetFollowedSheets);
+router.post("/follow",authenticateToken, handleFollowSheet);
+router.post("/mark-solved",authenticateToken, handleMarkQuestionAsSolved);
+router.get("/",authenticateToken, handleGetAllSheets);
+router.post("/details",authenticateToken, handleGetSheetById);
+router.get("/followed-sheets",authenticateToken, handleGetFollowedSheets);
+router.post("/solvedbyuser",authenticateToken, handleGetSolvedQuestionsByUser);
 export default router;
