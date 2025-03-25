@@ -105,7 +105,7 @@ function DevStats() {
                                 endDate={new Date()}
                                 values={heatmapData}
                                 classForValue={(value) => {
-                                    if (value.count === 0) return "fill-gray-200"; // No contribution (gray)
+                                    if (!value || value.count === 0) return "fill-gray-200"; // No contribution (gray)
                                     if (value.count === 1) return "fill-green-300";
                                     if (value.count === 2) return "fill-green-300";
                                     if (value.count === 3) return "fill-green-500";

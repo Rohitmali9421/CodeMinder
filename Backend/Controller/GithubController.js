@@ -1,13 +1,13 @@
 import axios from "axios";
 import { request, gql } from "graphql-request";
-
+import dotenv from "dotenv";
+dotenv.config();
 // GitHub API URLs
 const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 
 // GitHub Token (Set in .env file)
-const TOKEN =
-  "";
+const TOKEN =process.env.GITHUB_TOKEN;
 
 const headers = {
   Authorization: `Bearer ${TOKEN}`,
@@ -99,61 +99,80 @@ const getContributions = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
-// 📌 Fetch PRs, Stars, Issues
-const getStats = async (req, res) => {
-  try {
-    const username = req.params.username;
-
-    // Fetch Pull Requests
-    const { data: prData } = await axios.get(
-      `${GITHUB_API_URL}/search/issues?q=author:${username}+is:pr`,
-      { headers }
-    );
-
-    // Fetch Issues
-    const { data: issueData } = await axios.get(
-      `${GITHUB_API_URL}/search/issues?q=author:${username}+is:issue`,
-      { headers }
-    );
-
-    // Fetch user's starred repositories
-    const { data: starsData } = await axios.get(
-      `${GITHUB_API_URL}/users/${username}/starred`,
-      { headers }
-    );
-
-    // Fetch total commits
-    const getTotalCommits = async () => {
-      try {
-        const repos = await axios.get(
-          `${GITHUB_API_URL}/users/${username}/repos`,
-          { headers }
-        );
-
-        let totalCommits = 0;
-        for (const repo of repos.data.slice(0, 5)) {
-          // Limit to 5 repos to avoid rate limits
-          const { data: commits } = await axios.get(
-            repo.commits_url.replace("{/sha}", ""),
-            { headers }
-          );
-          totalCommits += commits?.length || 0;
+const getTotalCommitsGraphQL = async (username) => {
+    try {
+      const query = gql`
+        query {
+          user(login: "${username}") {
+            repositories(first: 100, isFork: false) {
+              nodes {
+                defaultBranchRef {
+                  target {
+                    ... on Commit {
+                      history {
+                        totalCount
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
-        return totalCommits;
-      } catch (error) {
-        return 0;
-      }
-    };
-
-    return res.json({
-      stars: starsData?.length || 0,
-      commits: await getTotalCommits(),
-      pullRequests: prData?.total_count || 0,
-      issues: issueData?.total_count || 0,
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-};
+      `;
+  
+      const result = await request(GITHUB_GRAPHQL_URL, query, {}, headers);
+  
+      let totalCommits = 0;
+  
+      // Sum up commit counts from all repositories
+      result.user.repositories.nodes.forEach((repo) => {
+        if (repo.defaultBranchRef && repo.defaultBranchRef.target) {
+          totalCommits += repo.defaultBranchRef.target.history.totalCount;
+        }
+      });
+  
+      return totalCommits;
+    } catch (error) {
+      console.error("GraphQL Commit Fetch Error:", error.message);
+      return 0;
+    }
+  };
+  const getStats = async (req, res) => {
+    try {
+      const username = req.params.username;
+  
+      // Fetch Pull Requests
+      const { data: prData } = await axios.get(
+        `${GITHUB_API_URL}/search/issues?q=author:${username}+is:pr`,
+        { headers }
+      );
+  
+      // Fetch Issues
+      const { data: issueData } = await axios.get(
+        `${GITHUB_API_URL}/search/issues?q=author:${username}+is:issue`,
+        { headers }
+      );
+  
+      // Fetch user's starred repositories
+      const { data: starsData } = await axios.get(
+        `${GITHUB_API_URL}/users/${username}/starred`,
+        { headers }
+      );
+  
+      // Get total commits using GraphQL
+      const totalCommits = await getTotalCommitsGraphQL(username);
+  
+      return res.json({
+        stars: starsData?.length || 0,
+        commits: totalCommits,
+        pullRequests: prData?.total_count || 0,
+        issues: issueData?.total_count || 0,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
+  
+  
 export { getStats, getContributions, getUserProfile };

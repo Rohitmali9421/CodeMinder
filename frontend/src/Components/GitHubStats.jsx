@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { FaStar, FaCodeBranch, FaExclamationCircle } from "react-icons/fa";
 import { FaCodeCommit } from "react-icons/fa6";
 
-const GITHUB_USERNAME = "Rohitmali9421"; // Replace with your GitHub username
+const GITHUB_API_URL = "http://localhost:4000/api/github/Rohitmali9421/stats";
 
 export default function GitHubStats() {
   const [stats, setStats] = useState({
@@ -15,39 +15,14 @@ export default function GitHubStats() {
   useEffect(() => {
     async function fetchGitHubStats() {
       try {
-        // Fetch repositories
-        const reposRes = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos`);
-        const reposData = await reposRes.json();
-        if (!Array.isArray(reposData)) throw new Error("Invalid repositories data");
-
-        // Calculate total stars
-        const totalStars = reposData.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
-
-        // Fetch total PRs
-        const prsRes = await fetch(`https://api.github.com/search/issues?q=author:${GITHUB_USERNAME}+is:pr`);
-        const prsData = await prsRes.json();
-        const totalPRs = prsData?.total_count || 0;
-
-        // Fetch total issues
-        const issuesRes = await fetch(`https://api.github.com/search/issues?q=author:${GITHUB_USERNAME}+is:issue`);
-        const issuesData = await issuesRes.json();
-        const totalIssues = issuesData?.total_count || 0;
-
-        // Fetch commits using public events
-        const eventsRes = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/events/public`);
-        const eventsData = await eventsRes.json();
-        if (!Array.isArray(eventsData)) throw new Error("Invalid events data");
-
-        // Count the number of PushEvents (commits)
-        const totalCommits = eventsData.filter(event => event.type === "PushEvent")
-          .reduce((sum, event) => sum + (event.payload?.size || 0), 0);
-
-        // Update state
+        const response = await fetch(GITHUB_API_URL);
+        const data = await response.json();
+        
         setStats({
-          stars: totalStars,
-          commits: totalCommits,
-          prs: totalPRs,
-          issues: totalIssues,
+          stars: data.stars || 0,
+          commits: data.commits || 0,
+          prs: data.pullRequests || 0,
+          issues: data.issues || 0,
         });
       } catch (error) {
         console.error("Failed to fetch GitHub stats:", error);

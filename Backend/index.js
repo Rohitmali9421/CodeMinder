@@ -6,6 +6,8 @@ import UserRouter from "./Routes/User.js"
 import SheetRouter from "./Routes/Sheet.js"
 import NoteRouter from "./Routes/Note.js"
 import GithubRouter from "./Routes/Github.js"
+import LeetcodeRouter from "./Routes/Leetcode.js"
+import CodeforcesRouter from "./Routes/Codeforces.js"
 dotenv.config();
 
 const PORT = process.env.PORT || 4000;
@@ -25,6 +27,8 @@ app.use("/user", UserRouter);
 app.use("/api/sheets", SheetRouter);
 app.use("/api/notes", NoteRouter);
 app.use("/api/github", GithubRouter);
+app.use("/api/leetcode", LeetcodeRouter);
+app.use("/api/codeforces", CodeforcesRouter);
 
 app.listen(PORT, () => {
     console.log("Server is running on " + PORT);
