@@ -7,11 +7,11 @@ function Analysis() {
                 <section className="w-full md:mb-10 md:p-4">
                     <div className="flex flex-col items-center justify-center text-gray-500 min-h-[70vh]">
                         {/* Image */}
-                        <img
+                        {/* <img
                             src="https://codolio.com/question_tracker/tour/QuestionTrackerTour-6.png"
                             alt="No Data"
                             className="w-[30rem] h-auto"
-                        />
+                        /> */}
 
                         {/* Heading */}
                         <p className="text-black dark:text-darkText-300 text-4xl font-medium mt-4">
