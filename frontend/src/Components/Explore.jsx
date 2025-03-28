@@ -8,13 +8,20 @@ import { Link } from "react-router-dom";
 const Explore = () => {
     const [search, setSearch] = useState("");
     const [sheets, setSheets] = useState([]);
+
+    // Function to fetch sheets
     const fetchSheets = async () => {
-        const response = await axios.get("http://localhost:4000/api/sheets")
-        setSheets(response.data?.data)
-    }
+        try {
+            const response = await axios.get("http://localhost:4000/api/sheets");
+            setSheets(response.data?.data || []);
+        } catch (error) {
+            console.error("Error fetching sheets:", error);
+        }
+    };
+
     useEffect(() => {
-        fetchSheets()
-    })
+        fetchSheets(); // Fetch data once when component mounts
+    }, []); // Dependency array ensures it runs only once
 
     return (
         <div className="flex flex-col m-4 w-full h-full gap-8 no-scrollbar relative">
@@ -26,7 +33,6 @@ const Explore = () => {
                     Choose from 30+ structured coding paths
                 </p>
             </div>
-
 
             <div className="relative w-full max-w-[26rem]">
                 <Search className="absolute w-5 h-5 text-gray-400 right-3 top-1/2 -translate-y-1/2" />
@@ -46,12 +52,14 @@ const Explore = () => {
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {sheets?.map((sheet) => (
-                        <Link to={`sheet/${sheet._id}`}>
-                            <SheetCard key={sheet._id} title={sheet.title} description={sheet.description} questions={sheet.questions.length} />
+                        <Link key={sheet._id} to={`sheet/${sheet._id}`}>
+                            <SheetCard 
+                                title={sheet.title} 
+                                description={sheet.description} 
+                                questions={sheet.questions.length} 
+                            />
                         </Link>
                     ))}
-
-
                 </div>
             </div>
         </div>

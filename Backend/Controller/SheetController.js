@@ -38,65 +38,65 @@ const handleCreateSheet = async (req, res) => {
   }
 };
 
-// const handleFetchAndAddQuestions = async (req, res) => {
-//     try {
-//       const { sheetId } = req.body;
+const handleFetchAndAddQuestions = async (req, res) => {
+    try {
+      const { sheetId } = req.body;
 
-//       if (!sheetId ) {
-//         return res.status(400).json({ error: "Sheet ID and API URL are required" });
-//       }
+      if (!sheetId ) {
+        return res.status(400).json({ error: "Sheet ID and API URL are required" });
+      }
 
-//       const response = await axios.get("https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/striver-sde-sheet");
-//       const questionsData = response.data.data.questions;
+      const response = await axios.get("https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/strivers-a2z-dsa-sheet");
+      const questionsData = response.data.data.questions;
 
-//       if (!Array.isArray(questionsData)) {
-//         return res.status(400).json({ error: "Invalid API response format" });
-//       }
+      if (!Array.isArray(questionsData)) {
+        return res.status(400).json({ error: "Invalid API response format" });
+      }
 
-//       const sheet = await Sheet.findById(sheetId);
-//       if (!sheet) {
-//         return res.status(404).json({ error: "Sheet not found" });
-//       }
+      const sheet = await Sheet.findById(sheetId);
+      if (!sheet) {
+        return res.status(404).json({ error: "Sheet not found" });
+      }
 
-//       const questionIds = [];
+      const questionIds = [];
 
-//       for (const item of questionsData) {
-//         const questionData = item.questionId;
+      for (const item of questionsData) {
+        const questionData = item.questionId;
 
-//         let existingQuestion = await Question.findOne({ title: questionData.name });
+        let existingQuestion = await Question.findOne({ title: questionData.name });
 
-//         if (!existingQuestion) {
-//           existingQuestion = await Question.create({
-//             title: questionData.name,
-//             platform: questionData.platform,
-//             url: questionData.problemUrl,
-//             difficulty: questionData.difficulty,
-//             topic: item.topic,
-//             topicTags: questionData.topics,
-//           });
-//         }
+        if (!existingQuestion) {
+          existingQuestion = await Question.create({
+            title: questionData.name,
+            platform: questionData.platform,
+            url: questionData.problemUrl,
+            difficulty: questionData.difficulty,
+            topic: item.topic,
+            topicTags: questionData.topics,
+          });
+        }
 
-//         if (!sheet.questions.includes(existingQuestion._id)) {
-//           questionIds.push(existingQuestion._id);
-//         }
-//       }
+        if (!sheet.questions.includes(existingQuestion._id)) {
+          questionIds.push(existingQuestion._id);
+        }
+      }
 
-//       if (questionIds.length === 0) {
-//         return res.status(400).json({ error: "All questions already exist in the sheet" });
-//       }
+      if (questionIds.length === 0) {
+        return res.status(400).json({ error: "All questions already exist in the sheet" });
+      }
 
-//       sheet.questions.push(...questionIds);
-//       await sheet.save();
+      sheet.questions.push(...questionIds);
+      await sheet.save();
 
-//       return res.status(200).json({
-//         message: "Questions added successfully",
-//         sheet,
-//       });
-//     } catch (error) {
-//       console.error("Error fetching and adding questions:", error);
-//       return res.status(500).json({ error: "Server error. Please try again later." });
-//     }
-//   };
+      return res.status(200).json({
+        message: "Questions added successfully",
+        sheet,
+      });
+    } catch (error) {
+      console.error("Error fetching and adding questions:", error);
+      return res.status(500).json({ error: "Server error. Please try again later." });
+    }
+  };
 
 // **********************Follow Sheet**************************
 const handleFollowSheet = async (req, res) => {
@@ -303,4 +303,5 @@ export {
   handleGetAllSheets,
   handleGetSheetById,
   handleGetFollowedSheets,
+  handleFetchAndAddQuestions
 };

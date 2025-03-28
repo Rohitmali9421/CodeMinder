@@ -1,11 +1,16 @@
+import Calendar from '@/Components/Calendar'
 import React from 'react'
 
 function EventTracker() {
-  return (
-    <div className='pt-20'>
-      event-tracker
-    </div>
-  )
+    return (
+        <div className="flex flex-row mt-20 ">
+            
+            <div className='w-full'>
+                <Calendar />
+
+            </div>
+        </div>
+    )
 }
 
 export default EventTracker

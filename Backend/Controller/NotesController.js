@@ -151,6 +151,7 @@ const updateGeneralNote = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
  const getQuestionNoteById = async (req, res) => {
     try {
         const { id } = req.params; // Extract noteId from request parameters

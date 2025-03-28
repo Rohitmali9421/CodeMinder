@@ -3,15 +3,26 @@
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Bar, Tooltip, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const data = [
-  { language: "JavaScript", value: 86, color: "#FACC15" }, // Yellow
-  { language: "Java", value: 4, color: "#60A5FA" }, // Blue
-  { language: "Python", value: 2, color: "#34D399" }, // Green
-  { language: "CSS", value: 5, color: "#10B981" }, // Green (Different Shade)
-  { language: "HTML", value: 3, color: "#EF4444" }, // Red
-];
+// Color mapping for different languages
+const colorMap = {
+  JavaScript: "#FACC15", // Yellow
+  Java: "#60A5FA", // Blue
+  Python: "#34D399", // Green
+  CSS: "#10B981", // Green (Different Shade)
+  HTML: "#EF4444", // Red
+};
 
-export default function StackedBarChart() {
+export default function LanguageProficiencyChart({data} ) {
+
+  // Convert API response to the required format
+  const formattedData = data
+    .map((item) => ({
+      language: item.language,
+      value: parseFloat(item.percentage), // Convert percentage string to number
+      color: colorMap[item.language] || "#8884d8", // Default color if not found
+    }))
+    .filter((item) => item.value > 0); // Remove languages with 0%
+
   return (
     <Card className="p-4">
       <CardHeader>
@@ -19,11 +30,14 @@ export default function StackedBarChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={50}>
-          <BarChart layout="vertical" data={[{ name: "Languages", ...data.reduce((acc, cur) => ({ ...acc, [cur.language]: cur.value }), {}) }]}>
+          <BarChart
+            layout="vertical"
+            data={[{ name: "Languages", ...formattedData.reduce((acc, cur) => ({ ...acc, [cur.language]: cur.value }), {}) }]}
+          >
             <XAxis type="number" domain={[0, 100]} hide />
             <YAxis type="category" dataKey="name" hide />
             <Tooltip />
-            {data.map((entry, index) => (
+            {formattedData.map((entry, index) => (
               <Bar key={index} dataKey={entry.language} stackId="1" barSize={20}>
                 <Cell fill={entry.color} />
               </Bar>
@@ -33,7 +47,7 @@ export default function StackedBarChart() {
 
         {/* Legend */}
         <div className="flex flex-wrap gap-3 mt-4">
-          {data.map((item, index) => (
+          {formattedData.map((item, index) => (
             <div key={index} className="flex items-center space-x-2">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
               <span className="text-sm font-medium">{item.language}</span>

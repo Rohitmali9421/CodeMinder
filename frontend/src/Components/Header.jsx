@@ -56,7 +56,7 @@ const Header = () => {
                                 <nav className="flex flex-col gap-4 mt-6">
                                     <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded transition" to="/question-tracker">Question Tracker</Link>
                                     <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded transition" to="/event-tracker">Event Tracker</Link>
-                                    <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded transition" to="/profile/Rohitmali9421">Profile Tracker</Link>
+                                    <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded transition" to="/profile">Profile Tracker</Link>
                                     <Link to="/login">
                                         <Button className="bg-orange-600 hover:bg-orange-700 text-white font-medium px-4 py-2 rounded-lg transition">Login</Button>
                                     </Link>
@@ -70,7 +70,7 @@ const Header = () => {
                 <nav className="hidden md:flex items-center gap-6">
                     <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/question-tracker">Question Tracker</Link>
                     <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/event-tracker">Event Tracker</Link>
-                    <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/profile/Rohitmali9421">Profile Tracker</Link>
+                    <Link className="px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/profile">Profile Tracker</Link>
                     
                     {user ? (
                         <Popover>
@@ -86,7 +86,7 @@ const Header = () => {
                                 </div>
                                 <hr className="my-2" />
                                 <div className="flex flex-col gap-2">
-                                    <Link className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded transition" to="/profile">Profile</Link>
+                                    <Link className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded transition" to="/profile/123">Profile</Link>
                                     <Link className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded transition" to="/profile/edit">Edit Profile</Link>
                                     <Button variant="destructive" className="w-full mt-2 hover:opacity-90 transition">Log Out</Button>
                                 </div>

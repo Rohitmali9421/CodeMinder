@@ -15,7 +15,6 @@ import ProblemSolving from './Components/ProblemSolving';
 import DevStats from './Components/DevStats';
 import ProfileEdit from './Pages/ProfileEdit';
 import BasicInfo from './Components/BasicInfo';
-import SocialProfile from './Components/Socials';
 import AccountSettings from './Components/Accounts';
 import Platform from './Components/Platform';
 import Explore from './Components/Explore';
@@ -24,6 +23,10 @@ import Notes from './Components/Notes';
 import Analysis from './Components/Analysis';
 import Workspace from './Components/Workspace';
 import SheetDetails from './Components/SheetDetails';
+import LeetCodeStats from './Components/LeetCodeStats';
+import { ToastContainer } from 'react-toastify';
+import CodeforcesProfile from './Components/CodeforcesProfile';
+import GFG from './Components/GFG';
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -33,6 +36,7 @@ const router = createBrowserRouter(
             <Route path="event-tracker" element={<EventTracker />} />
             <Route path="login" element={<SignIn />} />
             <Route path="signup" element={<SignUp />} />
+            {/* <Route path="profile" element={<Resume />} /> */}
 
             {/* Nested Routes for Question Tracker */}
             <Route path="question-tracker" element={<QuestionTracker />}>
@@ -42,23 +46,21 @@ const router = createBrowserRouter(
                 <Route path="mySheets" element={<MySheets />} />
                 <Route path="notes" element={<Notes />} />
                 <Route path="analysis" element={<Analysis />} />
-                <Route path="explore/sheet/:id" element={<SheetDetails />} /> 
+                <Route path="explore/sheet/:id" element={<SheetDetails />} />
             </Route>
 
             {/* Profile Edit Nested Routes */}
-            <Route path="profile/edit" element={<ProfileEdit />}>
-                <Route index element={<BasicInfo />} />
-                <Route path="basicinfo" element={<BasicInfo />} />
-                <Route path="socials" element={<SocialProfile />} />
-                <Route path="accounts" element={<AccountSettings />} />
-                <Route path="platform" element={<Platform />} />
-            </Route>
+            <Route path="profile/edit" element={<ProfileEdit />} />
+
+
 
             {/* Profile Tracker with Sub-Routes */}
-            <Route path="profile/:id" element={<ProfileTracker />}>
-                <Route index element={<ProblemSolving />} /> {/* Default */}
-                <Route path="problemSolving" element={<ProblemSolving />} />
-                <Route path="devStats" element={<DevStats />} />
+            <Route path="profile" element={<ProfileTracker />}>
+                <Route path="leetcode" element={<LeetCodeStats />} />
+                <Route path="github" element={<DevStats />} />
+                <Route path="codeforces" element={<CodeforcesProfile />} />
+                {/* <Route path="geeksforgeeks" element={<GFG />} /> */}
+
             </Route>
         </Route>
     )
@@ -68,7 +70,7 @@ const App = () => {
     return (
         <Provider store={store}>
             <RouterProvider router={router} />
-            <Toaster />  {/* ✅ Add ShadCN Toaster Here */}
+            <ToastContainer />
         </Provider>
     );
 };

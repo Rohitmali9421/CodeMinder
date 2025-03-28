@@ -16,10 +16,19 @@ const DSATopicAnalysis = ({ topicData }) => {
             <h2 className="text-xl font-semibold text-gray-700 mb-4 text-center">
                 DSA Topic Analysis
             </h2>
-            <ResponsiveContainer width="100%" height={450}>
-                <BarChart layout="vertical" data={formattedData} margin={{ left: 20 }}>
+            <ResponsiveContainer width="100%" height={formattedData.length * 40 + 50}>
+                <BarChart
+                    layout="vertical"
+                    data={formattedData}
+                    margin={{ left: 20, right: 20, top: 10, bottom: 10 }}
+                >
                     <XAxis type="number" />
-                    <YAxis dataKey="topic" type="category" width={160} />
+                    <YAxis 
+                        dataKey="topic" 
+                        type="category" 
+                        width={200} 
+                        interval={0} // Ensures all labels are displayed
+                    />
                     <Tooltip cursor={{ fill: "#f3f4f6" }} />
                     <Bar dataKey="count" fill="#3b82f6" barSize={20} />
                 </BarChart>

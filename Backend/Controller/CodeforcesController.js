@@ -2,11 +2,26 @@ import axios from "axios";
 
 const CODEFORCES_URL = "https://codeforces.com/api";
 
+// Fetch basic user info including rating and rank
+const fetchCodeforcesUserInfo = async (username) => {
+    const response = await axios.get(`${CODEFORCES_URL}/user.info?handles=${username}`);
+    if (!response.data || response.data.status !== "OK") throw new Error("User not found");
+
+    const user = response.data.result[0];
+    return {
+        rating: user.rating || 0, // Current rating
+        maxRating: user.maxRating || 0, // Highest rating achieved
+        rank: user.rank || "Unrated",
+        maxRank: user.maxRank || "Unrated"
+    };
+};
+
+// Fetch problem-solving stats categorized by difficulty
 const fetchCodeforcesStats = async (username) => {
     const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
     if (!response.data || response.data.status !== "OK") throw new Error("User not found");
 
-    const solvedProblems = new Set(); // To store unique solved problems
+    const solvedProblems = new Set();
     const difficultyStats = { Easy: 0, Medium: 0, Hard: 0 };
 
     response.data.result.forEach((submission) => {
@@ -15,7 +30,6 @@ const fetchCodeforcesStats = async (username) => {
             if (!solvedProblems.has(problemId)) {
                 solvedProblems.add(problemId);
 
-                // Categorize problem by difficulty
                 if (submission.problem.rating <= 1200) difficultyStats.Easy++;
                 else if (submission.problem.rating <= 2000) difficultyStats.Medium++;
                 else difficultyStats.Hard++;
@@ -34,6 +48,7 @@ const fetchCodeforcesStats = async (username) => {
     };
 };
 
+// Fetch user submission history for heatmap
 const fetchCodeforcesSubmissions = async (username) => {
     const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
     if (!response.data || response.data.status !== "OK") throw new Error("User not found");
@@ -48,6 +63,7 @@ const fetchCodeforcesSubmissions = async (username) => {
     return submissionCalendar;
 };
 
+// Fetch problems solved by topic/tags
 const fetchCodeforcesProblemTags = async (username) => {
     const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
     if (!response.data || response.data.status !== "OK") throw new Error("User not found");
@@ -63,17 +79,9 @@ const fetchCodeforcesProblemTags = async (username) => {
     return { topicWiseDistribution };
 };
 
-const fetchCodeforcesBadges = async (username) => {
-    // Codeforces does not provide a direct badge API, but you can add dynamic achievements
-    return [
-        {
-            id: "codeforces_achievement_2025",
-            name: "Active Coder 2025",
-            icon: "https://codeforces.org/images/codeforces-icon.png"
-        }
-    ];
-};
 
+
+// Main API function to fetch all Codeforces data
 const getAllCodeforcesData = async (req, res) => {
     try {
         const { username } = req.params;
@@ -81,21 +89,28 @@ const getAllCodeforcesData = async (req, res) => {
 
         console.log(`🔹 Fetching Codeforces data for ${username}...`);
 
-        const [stats, submissionCalendar, topicAnalysisStats, awards] = await Promise.all([
+        // Fetch user rating, stats, submissions, topic analysis, and badges in parallel
+        const [userInfo, stats, submissionCalendar, topicAnalysisStats] = await Promise.all([
+            fetchCodeforcesUserInfo(username),
             fetchCodeforcesStats(username),
             fetchCodeforcesSubmissions(username),
-            fetchCodeforcesProblemTags(username),
-            fetchCodeforcesBadges(username)
+            fetchCodeforcesProblemTags(username)
         ]);
+
+        // Fetch awards based on rating
 
         console.log(`✅ Successfully fetched all Codeforces data for ${username}`);
 
         return res.status(200).json({
             username,
+            rating: userInfo.rating,
+            maxRating: userInfo.maxRating,
+            rank: userInfo.rank,
+            maxRank: userInfo.maxRank,
             stats: stats.stats,
             submissionCalendar,
             topicAnalysisStats,
-            awards
+            
         });
     } catch (error) {
         console.error("❌ Error fetching Codeforces data:", error.message);

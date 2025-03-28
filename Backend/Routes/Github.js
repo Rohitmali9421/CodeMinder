@@ -1,11 +1,10 @@
 import express from "express";
-import { getContributions, getStats, getUserProfile } from "../Controller/GithubController.js";
+import {getGitHubUserData } from "../Controller/GithubController.js";
 
 const router = express.Router();
 
-router.get("/:username", getUserProfile);
-router.get("/:username/contributions", getContributions);
-router.get("/:username/stats", getStats);
+router.get("/:username", getGitHubUserData);
+
 
 
 export default router;

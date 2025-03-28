@@ -75,6 +75,32 @@ const handleGetUser = async (req, res) => {
     });
   }
 };
-// handle question solved bu user
+async function handleEditUser(req, res) {
+    try {
+        const userId = req.user.id; // Get user ID from auth middleware
+        const { name, platforms } = req.body; // Extract fields to update
 
-export { handleSignUp, handleLogin, handleGetUser };
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Update fields if provided
+        if (name) user.name = name;
+        if (platforms) {
+            user.platforms.github = platforms.github || user.platforms.github;
+            user.platforms.leetcode = platforms.leetcode || user.platforms.leetcode;
+            user.platforms.geeksforgeeks = platforms.geeksforgeeks || user.platforms.geeksforgeeks;
+            user.platforms.codeforces = platforms.codeforces || user.platforms.codeforces;
+        }
+
+        await user.save();
+
+        const { password: _, ...updatedUser } = user._doc;
+        return res.status(200).json({ message: "Profile updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Error updating user:", error.message);
+        return res.status(500).json({ error: "Server error. Please try again later." });
+    }
+}
+export { handleSignUp, handleLogin, handleGetUser,handleEditUser };
