@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "@/Features/Auth/AuthSlice";
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 
 const SignIn = () => {
     const dispatch = useDispatch();
-    const { error, loading } = useSelector((state) => state.auth); // Select error state
+    const navigate = useNavigate();
+    const { user, error, loading } = useSelector((state) => state.auth);
 
     const {
         register,
@@ -21,6 +22,13 @@ const SignIn = () => {
     const onSubmit = (data) => {
         dispatch(loginUser(data));
     };
+
+    // Redirect to dashboard if user is already logged in
+    useEffect(() => {
+        if (user) {
+            navigate("/"); // Change "/dashboard" to the desired route
+        }
+    }, [user, navigate]);
 
     return (
         <main className="flex items-center justify-center min-h-screen px-4">
@@ -35,7 +43,6 @@ const SignIn = () => {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                        {/* Email Field */}
                         <div>
                             <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
                                 Email Address
@@ -50,7 +57,6 @@ const SignIn = () => {
                             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
                         </div>
 
-                        {/* Password Field */}
                         <div>
                             <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
                                 Password
@@ -67,19 +73,16 @@ const SignIn = () => {
                             )}
                         </div>
 
-                        {/* Server Error Message */}
                         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-                        {/* Submit Button */}
                         <Button
                             type="submit"
-                            disabled={loading} // Disable button while loading
+                            disabled={loading}
                             className="w-full bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white py-2 rounded-md transition-all"
                         >
                             {loading ? "Signing In..." : "Sign In"}
                         </Button>
 
-                        {/* Sign Up Link */}
                         <p className="text-sm text-center text-gray-600 dark:text-gray-400">
                             Don't have an account?{" "}
                             <Link to="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">

@@ -1,20 +1,21 @@
 import React from 'react'
-import Header from '../Components/Header'
-import HeroSection from '../Components/HeroSection'
-import CodingPlatform from '../Components/CodingPlatform'
-import PrepSimplifier from '../Components/PrepSimplifier'
-import FAQ from '../Components/FAQ'
-import CodingPortfolio from '@/Components/CodingPortfolio'
+import Header from '../Components/Home/Header'
+import HeroSection from '../Components/Home/HeroSection'
+import CodingPlatform from '../Components/Home/CodingPlatform'
+import PrepSimplifier from '../Components/Home/PrepSimplifier'
+import FAQ from '../Components/Home/FAQ'
+import CodingPortfolio from '@/Components/Home/CodingPortfolio'
 
 
 function LandingPage() {
     return (
-        <div className='  w-full px-4 sm:px-8 md:px-40 pt-20'>
+        <div className='  w-full overflow-x-hidden'>
             <HeroSection />
-            <CodingPlatform />
             <PrepSimplifier />
+            {/* <CodingPlatform />
+            
             <CodingPortfolio />
-            <FAQ />     
+            <FAQ />      */}
         </div>
     )
 }

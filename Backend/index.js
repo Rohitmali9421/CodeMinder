@@ -9,6 +9,7 @@ import GithubRouter from "./Routes/Github.js"
 import LeetcodeRouter from "./Routes/Leetcode.js"
 import CodeforcesRouter from "./Routes/Codeforces.js"
 import GFGRouter from "./Routes/GFG.js"
+import AIInterview from "./Routes/interviewRoutes.js"
 dotenv.config();
 
 const PORT = process.env.PORT || 4000;
@@ -31,6 +32,7 @@ app.use("/api/github", GithubRouter);
 app.use("/api/leetcode", LeetcodeRouter);
 app.use("/api/codeforces", CodeforcesRouter);
 app.use("/api/gfg", GFGRouter);
+app.use("/api/v1/AiInterview",AIInterview);
 
 app.listen(PORT, () => {
     console.log("Server is running on " + PORT);

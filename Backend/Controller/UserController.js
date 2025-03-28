@@ -3,34 +3,35 @@ import { setUser } from "../Services/Auth.js";
 import User from "../Model/User.js";
 
 async function handleSignUp(req, res) {
-  try {
-    const { name, email, password } = req.body;
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).error({ error: "User already exists" });
+    try {
+      const { name, email, password } = req.body;
+  
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+  
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+      });
+  
+      const accessToken = setUser(newUser);
+      const userWithoutSensitiveData = newUser.toObject(); 
+      delete userWithoutSensitiveData.password;
+      delete userWithoutSensitiveData.sheets;
+  
+      return res
+        .status(200)
+        .json({ user: userWithoutSensitiveData, token: accessToken });
+    } catch (error) {
+      console.error("Error during signup:", error);
+      res.status(500).json({ error: "Server error. Please try again later." });
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    const accessToken = setUser(newUser);
-    const {
-      password: _,
-      sheets: __,
-      ...userWithoutSensitiveData
-    } = newUser._doc;
-
-    return res
-      .status(200)
-      .json({ user: userWithoutSensitiveData, token: accessToken });
-  } catch (error) {
-    res.status(500).json({ error: "Server error. Please try again later." });
   }
-}
+  
 
 async function handleLogin(req, res) {
   try {

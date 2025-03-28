@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import CalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import DSAStats from "./DSAStats";
-import DSATopicAnalysis from "./DSATopicAnalysis";
+import DSAStats from "./ProfileTracker/DSAStats";
+import DSATopicAnalysis from "./ProfileTracker/DSATopicAnalysis";
 
 const ProblemSolving = () => {
     const [data, setData] = useState(null);

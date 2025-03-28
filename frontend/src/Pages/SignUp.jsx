@@ -1,8 +1,8 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, signupUser } from "@/Features/Auth/AuthSlice";
+import { signupUser } from "@/Features/Auth/AuthSlice";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,14 +10,18 @@ import { Label } from "@/components/ui/label";
 
 const SignUp = () => {
     const dispatch = useDispatch();
-    const { error, loading } = useSelector((state) => state.auth); // Select error state
-
+    const { user, error, loading } = useSelector((state) => state.auth); // Select error state
+    const navigate = useNavigate();
     const {
         register,
         handleSubmit,
         formState: { errors },
     } = useForm();
-
+    useEffect(() => {
+        if (user) {
+            navigate("/"); // Change "/dashboard" to the desired route
+        }
+    }, [user, navigate]);
     const onSubmit = (data) => {
         dispatch(signupUser(data));
     };
