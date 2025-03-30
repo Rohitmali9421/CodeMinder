@@ -29,6 +29,11 @@ import JobForm from './Components/AiInterview/JobForm';
 import AiInterview from './Components/AiInterview/AiInterview';
 import AIQuestionsPage from './Components/AiInterview/AIQuestionspage';
 import CommunityChat from './Components/chat/ChatCommunity';
+import ScorePage from './Components/AiInterview/ScorePage';
+import ChatGemini from './Components/Chatwithgemini/chatgemini';
+import ATSResume from './Components/chat/ATSResume';
+// import ATSResume from './Components/chat/ATSResume';
+
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -41,9 +46,14 @@ const router = createBrowserRouter(
             <Route path="ainterview" element={<InterviewDashBord />} />
             <Route path="AIJobForm" element={<JobForm />} />
             <Route path="community" element={<CommunityChat />} />
+            <Route path="resume" element={<ATSResume />} />
             <Route path="AI-Interivew/:interviewId" element={<AiInterview />} />
             <Route path="AI-Interivew/:interviewId/start" element={<AIQuestionsPage />} />
-            <Route path="AI-Interivew/:interviewId//score" element={<AIQuestionsPage />} />
+            <Route path="AI-Interivew/:interviewId/score" element={<ScorePage />} />
+            
+            {/* <Route path="resume" element={<ATSResume />} /> */}
+            <Route path="chat" element={<ChatGemini />} />
+            
             {/* <Route path="profile" element={<Resume />} /> */}
 
             {/* Nested Routes for Question Tracker */}
