@@ -14,9 +14,11 @@ const SheetDetails = () => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [sheetQuestions, setSheetQuestions] = useState([]);
     const [completed, setCompleted] = useState(19);
-    const [total, setTotal] = useState(191);
+    const [total, setTotal] = useState(null);
+    const [title, settitle] = useState(null);
+    const [description, setdescription] = useState(null);
     const { user } = useSelector((state) => state.auth);
-    
+
 
     // Fetch Sheet Questions
     const fetchSheetQuestions = async () => {
@@ -24,6 +26,10 @@ const SheetDetails = () => {
             const response = await axios.post(`http://localhost:4000/api/sheets/details`, {
                 sheetId: sheetId,
             });
+            setTotal(response.data.totalquestion)
+            setCompleted(response.data.totalsolved)
+            setdescription(response.data.description)
+            settitle(response.data.title)
             setSheetQuestions(response.data.data);
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -60,11 +66,9 @@ const SheetDetails = () => {
             <header className="w-full flex flex-col md:flex-row justify-between px-4 py-4 bg-white border md:rounded-t-md shadow-sm">
                 {/* Left Section */}
                 <div className="w-full md:w-3/4 flex flex-col gap-2">
-                    <h2 className="text-2xl md:text-4xl font-semibold text-gray-800">Striver SDE Sheet</h2>
+                    <h2 className="text-2xl md:text-4xl font-semibold text-gray-800">{title}</h2>
                     <p className="text-gray-500 text-sm">
-                        Striver SDE Sheet contains hand-picked top coding interview questions from different topics of
-                        Data Structures & Algorithms. These questions are frequently asked in coding interviews at
-                        Google, Amazon, Microsoft, Facebook, Swiggy, Flipkart, etc., covering almost all key concepts of DSA.
+                        {description}
                     </p>
 
                     {/* Follow Button */}

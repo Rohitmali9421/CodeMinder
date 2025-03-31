@@ -60,7 +60,7 @@ const NavLinks = ({ closeMenu }) => {
         { to: "/question-tracker/explore", label: "Explore", icon: <FaSearch /> },
         { to: "/question-tracker/mySheets", label: "My Sheets", icon: <FaClipboardList /> },
         { to: "/question-tracker/notes", label: "Notes", icon: <FaStickyNote /> },
-        { to: "/question-tracker/analysis", label: "Analysis", icon: <FaChartBar /> },
+        // { to: "/question-tracker/analysis", label: "Analysis", icon: <FaChartBar /> },
     ];
 
     return (

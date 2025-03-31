@@ -42,8 +42,8 @@ const Header = () => {
                     <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/question-tracker">Questions</Link>
                     <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/event-tracker">Event</Link>
                     <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/profile">Profile</Link>
-                    <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/profile">Resume</Link>
-                    <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/profile">Job suggestion</Link>
+                    <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/resume">Resume</Link>
+                    <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/chat">CodeGpt</Link>
                     <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/ainterview">AI Interview</Link>
                     <Link className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition" to="/community">Community</Link>
                 </nav>
