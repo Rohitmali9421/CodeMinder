@@ -2,11 +2,11 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { setSingleInterview } from "../../redux/interviewSlice";
 import { motion } from "framer-motion";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { useState } from "react";
+import { setSingleInterview } from "@/Features/Auth/interviewSlice";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -20,9 +20,7 @@ const ScorePage = () => {
   useEffect(() => {
     const getAllInterviewData = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/v1/AiInterview/get/${interviewId}`, {
-          withCredentials: true,
-        });
+        const response = await axios.get(`http://localhost:4000/api/v1/AiInterview/get/${interviewId}`, );
         dispatch(setSingleInterview(response.data));
       } catch (error) {
         console.error("Error fetching interview:", error);
@@ -33,19 +31,19 @@ const ScorePage = () => {
 
   return (
     <motion.div
-      className="max-w-5xl mx-auto mt-10 p-6 bg-gray-900 text-white shadow-lg rounded-lg"
+      className="max-w-5xl mx-auto mt-20 p-6 bg-gray-900 text-white shadow-lg rounded-lg"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       {/* Header Section */}
-      <h1 className="text-3xl font-bold text-center text-blue-500">📊 Interview Score</h1>
-      <p className="text-lg text-center text-gray-300 mt-2">
+      <h1 className="text-3xl font-bold text-center text-blue-500">📊 Interview Performance</h1>
+      {/* <p className="text-lg text-center text-gray-300 mt-2">
         final performance score!
-      </p>
+      </p> */}
 
       {/* Circular Progress Bar for Final Score */}
-      <div className="flex justify-center my-6">
+      {/* <div className="flex justify-center my-6">
         <div className="w-32 h-32">
           <CircularProgressbar
             value={InterviewData?.finalScore || 0}
@@ -59,7 +57,7 @@ const ScorePage = () => {
             })}
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Questions & Answers Section */}
       <div className="mt-6">
@@ -90,6 +88,10 @@ const ScorePage = () => {
                 <p className="text-sm text-gray-300">
                   <span className="font-bold text-green-400">✅ Your Answer:</span>{" "}
                   {question.userAnswer || "No answer provided"}
+                </p>
+                <p className="text-sm text-gray-300">
+                  <span className="font-bold text-green-400">👤 Ai Answer:</span>{" "}
+                  {question.aiAnswer || "No answer provided"}
                 </p>
                 <p className="text-sm text-gray-300 mt-2">
                   <span className="font-bold text-blue-400">🤖 AI Feedback:</span>{" "}
