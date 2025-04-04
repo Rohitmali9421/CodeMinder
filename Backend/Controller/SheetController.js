@@ -39,64 +39,74 @@ const handleCreateSheet = async (req, res) => {
 };
 
 const handleFetchAndAddQuestions = async (req, res) => {
-    try {
-      const { sheetId } = req.body;
+  try {
+    const { sheetId } = req.body;
 
-      if (!sheetId ) {
-        return res.status(400).json({ error: "Sheet ID and API URL are required" });
-      }
-
-      const response = await axios.get("https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/strivers-a2z-dsa-sheet");
-      const questionsData = response.data.data.questions;
-
-      if (!Array.isArray(questionsData)) {
-        return res.status(400).json({ error: "Invalid API response format" });
-      }
-
-      const sheet = await Sheet.findById(sheetId);
-      if (!sheet) {
-        return res.status(404).json({ error: "Sheet not found" });
-      }
-
-      const questionIds = [];
-
-      for (const item of questionsData) {
-        const questionData = item.questionId;
-
-        let existingQuestion = await Question.findOne({ title: questionData.name });
-
-        if (!existingQuestion) {
-          existingQuestion = await Question.create({
-            title: questionData.name,
-            platform: questionData.platform,
-            url: questionData.problemUrl,
-            difficulty: questionData.difficulty,
-            topic: item.topic,
-            topicTags: questionData.topics,
-          });
-        }
-
-        if (!sheet.questions.includes(existingQuestion._id)) {
-          questionIds.push(existingQuestion._id);
-        }
-      }
-
-      if (questionIds.length === 0) {
-        return res.status(400).json({ error: "All questions already exist in the sheet" });
-      }
-
-      sheet.questions.push(...questionIds);
-      await sheet.save();
-
-      return res.status(200).json({
-        message: "Questions added successfully",
-        sheet,
-      });
-    } catch (error) {
-      console.error("Error fetching and adding questions:", error);
-      return res.status(500).json({ error: "Server error. Please try again later." });
+    if (!sheetId) {
+      return res
+        .status(400)
+        .json({ error: "Sheet ID and API URL are required" });
     }
-  };
+
+    const response = await axios.get(
+      "https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/strivers-a2z-dsa-sheet"
+    );
+    const questionsData = response.data.data.questions;
+
+    if (!Array.isArray(questionsData)) {
+      return res.status(400).json({ error: "Invalid API response format" });
+    }
+
+    const sheet = await Sheet.findById(sheetId);
+    if (!sheet) {
+      return res.status(404).json({ error: "Sheet not found" });
+    }
+
+    const questionIds = [];
+
+    for (const item of questionsData) {
+      const questionData = item.questionId;
+
+      let existingQuestion = await Question.findOne({
+        title: questionData.name,
+      });
+
+      if (!existingQuestion) {
+        existingQuestion = await Question.create({
+          title: questionData.name,
+          platform: questionData.platform,
+          url: questionData.problemUrl,
+          difficulty: questionData.difficulty,
+          topic: item.topic,
+          topicTags: questionData.topics,
+        });
+      }
+
+      if (!sheet.questions.includes(existingQuestion._id)) {
+        questionIds.push(existingQuestion._id);
+      }
+    }
+
+    if (questionIds.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "All questions already exist in the sheet" });
+    }
+
+    sheet.questions.push(...questionIds);
+    await sheet.save();
+
+    return res.status(200).json({
+      message: "Questions added successfully",
+      sheet,
+    });
+  } catch (error) {
+    console.error("Error fetching and adding questions:", error);
+    return res
+      .status(500)
+      .json({ error: "Server error. Please try again later." });
+  }
+};
 
 // **********************Follow Sheet**************************
 const handleFollowSheet = async (req, res) => {
@@ -169,95 +179,106 @@ const handleGetAllSheets = async (req, res) => {
   }
 };
 
-
 const handleGetSheetById = async (req, res) => {
-    try {
-      const { sheetId } = req.body; // Read from request body
-      const userId = req.user.id;
-  
-      // Fetch the sheet along with its questions
-      const sheet = await Sheet.findById(sheetId).populate("questions");
-      if (!sheet) {
-        return res.status(404).json({
-          success: false,
-          error: "Sheet not found",
-        });
-      }
-  
-      // Fetch user data to get solved questions
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: "User not found",
-        });
-      }
-  
-      // Fetch all question notes for the user
-      const questionNotes = await Notes.find({ user: userId }).lean(); // Use .lean() for better performance
-  
-      // Ensure user.sheets exists before calling .find()
-      const userSheetProgress = Array.isArray(user.sheets) && user.sheets.length > 0
-        ? user.sheets.find((s) => s.sheet_id?.toString() === sheetId)
-        : null;
-  
-      // Create a set of solved question IDs for fast lookup
-      const solvedQuestionsSet = new Set();
-      if (userSheetProgress && Array.isArray(userSheetProgress.solved_questions)) {
-        userSheetProgress.solved_questions.forEach((q) => {
-          if (q.question_id) {
-            solvedQuestionsSet.add(q.question_id.toString());
-          }
-        });
-      }
-  
-      const groupedQuestions = {};
-  
-      // Group questions by topic and mark them as solved or not
-      sheet.questions.forEach((question) => {
-        const topic = question.topic;
-  
-        if (!groupedQuestions[topic]) {
-          groupedQuestions[topic] = [];
-        }
-  
-        // Find the note for this question (Fix: Use `question_id` as per your schema)
-        const note = questionNotes.find(
-          (n) => n.question_id.toString() === question._id.toString()
-        );
-  
-        groupedQuestions[topic].push({
-          questionId: question._id,
-          title: question.title,
-          platform: question.platform,
-          url: question.url,
-          difficulty: question.difficulty,
-          topicTags: question.topicTags,
-          status: solvedQuestionsSet.has(question._id.toString()) ? "Completed" : "Not Attempted",
-          noteId: note ? note._id : null, // Include noteId if available
-        });
-      });
-  
-      // Convert grouped questions into array format
-      const formattedResponse = Object.keys(groupedQuestions).map((topic) => ({
-        topic,
-        questions: groupedQuestions[topic],
-      }));
-  
-      return res.status(200).json({
-        success: true,
-        data: formattedResponse,
-      });
-    } catch (error) {
-      console.error("Error fetching sheet by ID:", error);
-      return res.status(500).json({
+  try {
+    const { sheetId } = req.body; // Read from request body
+    const userId = req.user.id;
+
+    // Fetch the sheet along with its questions
+    const sheet = await Sheet.findById(sheetId).populate("questions");
+
+    if (!sheet) {
+      return res.status(404).json({
         success: false,
-        error: "Server error. Please try again later.",
+        error: "Sheet not found",
       });
     }
-  };
-  
-  
+
+    // Fetch user data to get solved questions
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    // Fetch all question notes for the user
+    const questionNotes = await Notes.find({ user: userId }).lean(); // Use .lean() for better performance
+
+    // Ensure user.sheets exists before calling .find()
+    const userSheetProgress =
+      Array.isArray(user.sheets) && user.sheets.length > 0
+        ? user.sheets.find((s) => s.sheet_id?.toString() === sheetId)
+        : null;
+
+    // Create a set of solved question IDs for fast lookup
+    const solvedQuestionsSet = new Set();
+    if (
+      userSheetProgress &&
+      Array.isArray(userSheetProgress.solved_questions)
+    ) {
+      userSheetProgress.solved_questions.forEach((q) => {
+        if (q.question_id) {
+          solvedQuestionsSet.add(q.question_id.toString());
+        }
+      });
+    }
+
+    const groupedQuestions = {};
+    let totalSolved = 0;
+
+    // Group questions by topic and mark them as solved or not
+    sheet.questions.forEach((question) => {
+      const topic = question.topic;
+
+      if (!groupedQuestions[topic]) {
+        groupedQuestions[topic] = [];
+      }
+
+      // Find the note for this question (Fix: Use `question_id` as per your schema)
+      const note = questionNotes.find(
+        (n) => n.question_id.toString() === question._id.toString()
+      );
+
+      const isSolved = solvedQuestionsSet.has(question._id.toString());
+
+      groupedQuestions[topic].push({
+        questionId: question._id,
+        title: question.title,
+        platform: question.platform,
+        url: question.url,
+        difficulty: question.difficulty,
+        topicTags: question.topicTags,
+        status: isSolved ? "Completed" : "Not Attempted",
+        noteId: note ? note._id : null, // Include noteId if available
+      });
+
+      if (isSolved) totalSolved++;
+    });
+
+    // Convert grouped questions into array format
+    const formattedResponse = Object.keys(groupedQuestions).map((topic) => ({
+      topic,
+      questions: groupedQuestions[topic],
+    }));
+
+    return res.status(200).json({
+      success: true,
+      description: sheet.description,
+      title: sheet.title,
+      totalquestion: sheet.questions.length,
+      totalsolved: totalSolved, // Number of solved questions
+      data: formattedResponse,
+    });
+  } catch (error) {
+    console.error("Error fetching sheet by ID:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error. Please try again later.",
+    });
+  }
+};
 
 const handleGetFollowedSheets = async (req, res) => {
   try {
@@ -303,5 +324,5 @@ export {
   handleGetAllSheets,
   handleGetSheetById,
   handleGetFollowedSheets,
-  handleFetchAndAddQuestions
+  handleFetchAndAddQuestions,
 };
