@@ -1,5 +1,5 @@
+import WorkspaceTable from "./WorkspaceTable";
 
-import WorkspaceTable from "./workspaceTable";
 
 const Workspace = () => {
     return (
