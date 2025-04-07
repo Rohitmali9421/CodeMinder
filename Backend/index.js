@@ -41,6 +41,7 @@ app.post("/api/aiagent", authenticateToken, generateAIResponse);
 
 app.use("/api/aiinterview", AIInterview);
 app.use("/api/resume", AnalyzeResume);
+
 app.get("/api/jobs", FetchInternships);
 
 // checkAndSendEmails()
