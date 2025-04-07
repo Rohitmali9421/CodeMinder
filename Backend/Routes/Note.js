@@ -1,17 +1,28 @@
 import express from "express";
-import { createGeneralNote, createNote, getQuestionNoteById, getUserNotes, getUserQuestionNotes, handleGetNoteById, handleUpdateNotes, updateGeneralNote } from "../Controller/NotesController.js";
+import {
+  createNote,
+  getUserNotes,
+  getUserQuestionNotes,
+  handleGetNoteById,
+  handleUpdateNotes,
+} from "../Controller/NotesController.js";
 import { authenticateToken } from "../Middlewares/Auth.js";
-
-
 
 const router = express.Router();
 
-router.put("/update-note/:noteId",authenticateToken,handleUpdateNotes );
-router.get("/note/:noteId",authenticateToken,handleGetNoteById );
-router.get("/",authenticateToken,getUserNotes );
-router.get("/questionnotes",authenticateToken,getUserQuestionNotes );
-router.post("/create",authenticateToken,createGeneralNote );
-router.post("/createquestionnote",authenticateToken,createNote );
-router.put("/general-notes/:id", updateGeneralNote);
-router.get("/:id", getQuestionNoteById);
+// Create a note (general or question)
+router.post("/create", authenticateToken, createNote);
+
+// Update any note by ID
+router.put("/update", authenticateToken, handleUpdateNotes);
+
+// Get all general notes of the user
+router.get("/general", authenticateToken, getUserNotes);
+
+// Get all question-specific notes of the user
+router.get("/question", authenticateToken, getUserQuestionNotes);
+
+// Get a note by its ID (general or question)
+router.get("/:noteId", authenticateToken, handleGetNoteById);
+
 export default router;
