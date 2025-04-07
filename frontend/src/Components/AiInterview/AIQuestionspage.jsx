@@ -28,7 +28,7 @@ const AIQuestionsPage = () => {
   useEffect(() => {
     const fetchInterview = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/AiInterview/get/${interviewId}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/get/${interviewId}`);
         dispatch(setSingleInterview(response.data));
         setLoading(false);
       } catch (error) {
@@ -80,7 +80,7 @@ const AIQuestionsPage = () => {
     try {  
       const response = await axios.post(
         
-        `http://localhost:4000/api/v1/AiInterview/${interviewId}/submitAns`,
+        `${import.meta.env.VITE_API_URL}/api/v1/AiInterview/${interviewId}/submitAns`,
         {
           questionId: currentQuestion._id,
           userAnswer,

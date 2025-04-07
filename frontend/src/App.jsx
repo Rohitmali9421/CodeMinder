@@ -2,7 +2,6 @@ import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './App/Store';
-import { Toaster } from "@/components/ui/toaster";  // ✅ Import ShadCN Toaster
 
 import LandingPage from './Pages/LandingPage';
 import QuestionTracker from './Pages/QuestionTracker';
@@ -79,8 +78,6 @@ const router = createBrowserRouter(
                 <Route path="leetcode" element={<LeetCodeStats />} />
                 <Route path="github" element={<DevStats />} />
                 <Route path="codeforces" element={<CodeforcesProfile />} />
-                {/* <Route path="geeksforgeeks" element={<GFG />} /> */}
-
             </Route>
         </Route>
     )

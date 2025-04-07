@@ -20,7 +20,7 @@ const AiInterview = () => {
   useEffect(() => {
     const fetchInterviewData = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/AiInterview/get/67e671e0b3e2c80e6320c591`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/get`);
         dispatch(setSingleInterview(response.data));
         
         

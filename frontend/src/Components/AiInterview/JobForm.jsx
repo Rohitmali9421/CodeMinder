@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { setAIquestions } from "@/Features/Auth/interviewSlice";
 
-const API_BASE_URL = "http://localhost:4000/api/v1/AiInterview/create";
 
 export default function JobForm() {
     const {
@@ -26,7 +25,7 @@ export default function JobForm() {
         console.log("Form Data Submitted:", data);
         try {
 
-            const respose = await axios.post(`http://localhost:4000/api/v1/AiInterview/create`,
+            const respose = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/create`,
                 data,
             )
             dispatch(setAIquestions(respose.data.newInterview));

@@ -15,7 +15,7 @@ export default function InterviewDashBord() {
     useEffect(() => {
         const fetchAllInterview = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/v1/AiInterview/getUserInterviews`, {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/getUserInterviews`, {
                 });
 
                 console.log("curr user : ", response);
