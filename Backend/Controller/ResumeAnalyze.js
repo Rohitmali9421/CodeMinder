@@ -5,6 +5,9 @@ import { jsonrepair } from "jsonrepair";
 
 dotenv.config();
 
+// ⛔ Disable worker for Node.js (important!)
+pdfjsLib.GlobalWorkerOptions.workerSrc = null;
+
 // 📄 Extract Text from PDF from a Buffer
 const extractTextFromPDF = async (buffer) => {
   const loadingTask = pdfjsLib.getDocument({ data: buffer });
