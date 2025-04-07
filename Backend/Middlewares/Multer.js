@@ -1,28 +1,37 @@
-const multer = require("multer");
+import multer from 'multer';
+import fs from 'fs';
+
+// Ensure ./public exists
+const uploadDir = './public';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./public");
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + file.originalname);
+    cb(null, Date.now() + '-' + file.originalname);
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
-function uploadMiddleware(req, res, next) {
-  const uploadSingle = upload.single("image");
+const uploadMiddleware = (req, res, next) => {
+  const uploadSingle = upload.single('file');
 
-  uploadSingle(req, res, async function (err) {
+  uploadSingle(req, res, (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
     if (!req.file) {
-      return res.status(400).json({ error: "Image is required"});
+      return res.status(400).json({ error: 'File is required' });
     }
-    req.body.imagePath = req.file.path;
+
+    req.body.filepath = req.file.path; // optional usage
     next();
   });
-}
+};
 
-module.exports = uploadMiddleware;
+export default uploadMiddleware;

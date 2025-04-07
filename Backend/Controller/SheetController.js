@@ -4,320 +4,213 @@ import axios from "axios";
 import Question from "../Model/Question.js";
 import Notes from "../Model/Notes.js";
 
-// **********************Create Sheet**************************
+// ************************ Create Sheet ************************
 const handleCreateSheet = async (req, res) => {
   try {
-    const { title, description, author } = req.body;
-
-    // Validate required fields
-    if (!title || !author) {
-      return res.status(400).json({ error: "Title and Author are required" });
+    const { title, description } = req.body;
+    const userID=req.user.id;
+    if (!title ) {
+      return res.status(400).json({ error: "Title is required." });
     }
-    // Check if the author exists
-    const user = await User.findById(author);
-    if (!user) {
-      return res.status(404).json({ error: "Author not found" });
-    }
+    const user = await User.findById(userID);
+    if (!user) return res.status(404).json({ error: "Author not found." });
 
-    // Create a new sheet
-    const newSheet = await Sheet.create({
-      title,
-      description,
-      author,
-    });
+    const newSheet = await Sheet.create({ title, description, author:userID });
 
     return res.status(201).json({
-      message: "Sheet created successfully",
+      message: "Sheet created successfully.",
       sheet: newSheet,
     });
   } catch (error) {
-    console.error("Error creating sheet:", error);
-    return res
-      .status(500)
-      .json({ error: "Server error. Please try again later." });
+    console.error("Create Sheet Error:", error);
+    return res.status(500).json({ error: "Server error. Try again later." });
   }
 };
 
+// ************************ Fetch and Add Questions ************************
 const handleFetchAndAddQuestions = async (req, res) => {
   try {
     const { sheetId } = req.body;
-
-    if (!sheetId) {
-      return res
-        .status(400)
-        .json({ error: "Sheet ID and API URL are required" });
-    }
-
-    const response = await axios.get(
-      "https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/strivers-a2z-dsa-sheet"
-    );
-    const questionsData = response.data.data.questions;
-
-    if (!Array.isArray(questionsData)) {
-      return res.status(400).json({ error: "Invalid API response format" });
-    }
+    if (!sheetId) return res.status(400).json({ error: "Sheet ID required." });
 
     const sheet = await Sheet.findById(sheetId);
-    if (!sheet) {
-      return res.status(404).json({ error: "Sheet not found" });
+    if (!sheet) return res.status(404).json({ error: "Sheet not found." });
+
+    const { data } = await axios.get("https://node.codolio.com/api/question-tracker/v1/sheet/public/get-sheet-by-slug/striver-sde-sheet");
+    const questionsData = data?.data?.questions;
+
+    if (!Array.isArray(questionsData)) {
+      return res.status(400).json({ error: "Invalid API response." });
     }
 
     const questionIds = [];
 
     for (const item of questionsData) {
-      const questionData = item.questionId;
+      const q = item.questionId;
 
-      let existingQuestion = await Question.findOne({
-        title: questionData.name,
-      });
-
-      if (!existingQuestion) {
-        existingQuestion = await Question.create({
-          title: questionData.name,
-          platform: questionData.platform,
-          url: questionData.problemUrl,
-          difficulty: questionData.difficulty,
+      let existing = await Question.findOne({ title: q.name });
+      if (!existing) {
+        existing = await Question.create({
+          title: q.name,
+          platform: q.platform,
+          url: q.problemUrl,
+          difficulty: q.difficulty,
           topic: item.topic,
-          topicTags: questionData.topics,
+          topicTags: q.topics,
         });
       }
 
-      if (!sheet.questions.includes(existingQuestion._id)) {
-        questionIds.push(existingQuestion._id);
+      if (!sheet.questions.includes(existing._id)) {
+        questionIds.push(existing._id);
       }
     }
 
     if (questionIds.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "All questions already exist in the sheet" });
+      return res.status(200).json({ message: "No new questions to add." });
     }
 
     sheet.questions.push(...questionIds);
     await sheet.save();
 
-    return res.status(200).json({
-      message: "Questions added successfully",
-      sheet,
-    });
+    return res.status(200).json({ message: "Questions added.", sheet });
   } catch (error) {
-    console.error("Error fetching and adding questions:", error);
-    return res
-      .status(500)
-      .json({ error: "Server error. Please try again later." });
+    console.error("Fetch/Add Questions Error:", error);
+    return res.status(500).json({ error: "Server error." });
   }
 };
 
-// **********************Follow Sheet**************************
+// ************************ Follow / Unfollow Sheet ************************
 const handleFollowSheet = async (req, res) => {
   try {
     const { sheetId } = req.body;
     const userId = req.user.id;
-    if (!userId || !sheetId) {
-      return res
-        .status(400)
-        .json({ error: "User ID and Sheet ID are required" });
+
+    if (!sheetId || !userId) {
+      return res.status(400).json({ error: "User ID and Sheet ID required." });
     }
 
-    const user = await User.findById(userId);
-    const sheet = await Sheet.findById(sheetId);
+    const [user, sheet] = await Promise.all([
+      User.findById(userId),
+      Sheet.findById(sheetId),
+    ]);
 
     if (!user || !sheet) {
-      return res.status(404).json({ error: "User or Sheet not found" });
+      return res.status(404).json({ error: "User or Sheet not found." });
     }
 
-    // Find index of the sheet in user's followed sheets
-    const sheetIndex = user.sheets.findIndex(
-      (s) => s.sheet_id.toString() === sheetId
-    );
+    const index = user.sheets.findIndex(s => s.sheet_id.toString() === sheetId);
 
-    if (sheetIndex !== -1) {
-      // Sheet already followed → Unfollow it
-      user.sheets.splice(sheetIndex, 1);
+    if (index !== -1) {
+      user.sheets.splice(index, 1);
       await user.save();
-      return res
-        .status(200)
-        .json({ message: "Successfully unfollowed the sheet", user });
+      return res.status(200).json({ message: "Unfollowed the sheet.", user });
     }
 
-    // Sheet not followed → Follow it
-    user.sheets.push({
-      sheet_id: sheetId,
-      solved_questions: [],
-    });
-
+    user.sheets.push({ sheet_id: sheetId, solved_questions: [] });
     await user.save();
-    const { password: _, ...userWithoutPassword } = user._doc;
+
+    const { password, ...rest } = user._doc;
 
     return res.status(200).json({
-      message: "Successfully followed the sheet",
-      user: userWithoutPassword,
+      message: "Followed the sheet.",
+      user: rest,
     });
   } catch (error) {
-    console.error("Error following/unfollowing sheet:", error);
-    return res
-      .status(500)
-      .json({ error: "Server error. Please try again later." });
+    console.error("Follow Sheet Error:", error);
+    return res.status(500).json({ error: "Server error." });
   }
 };
 
-// **********************Get All Sheet**************************
-
+// ************************ Get All Sheets ************************
 const handleGetAllSheets = async (req, res) => {
   try {
-    const sheets = await Sheet.find(); // Fetch all sheets
-    return res.status(200).json({
-      success: true,
-      data: sheets,
-    });
+    const sheets = await Sheet.find();
+    return res.status(200).json({ success: true, data: sheets });
   } catch (error) {
-    console.error("Error fetching sheets:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Server error. Please try again later.",
-    });
+    console.error("Get All Sheets Error:", error);
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 };
 
+// ************************ Get Sheet by ID ************************
 const handleGetSheetById = async (req, res) => {
   try {
-    const { sheetId } = req.body; // Read from request body
+    const { sheetId } = req.body;
     const userId = req.user.id;
 
-    // Fetch the sheet along with its questions
     const sheet = await Sheet.findById(sheetId).populate("questions");
+    if (!sheet) return res.status(404).json({ error: "Sheet not found." });
 
-    if (!sheet) {
-      return res.status(404).json({
-        success: false,
-        error: "Sheet not found",
-      });
-    }
-
-    // Fetch user data to get solved questions
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found",
-      });
-    }
+    if (!user) return res.status(404).json({ error: "User not found." });
 
-    // Fetch all question notes for the user
-    const questionNotes = await Notes.find({ user: userId }).lean(); // Use .lean() for better performance
+    const notes = await Notes.find({ user: userId }).lean();
+    const followed = user.sheets.find(s => s.sheet_id?.toString() === sheetId);
+    const solvedSet = new Set(followed?.solved_questions.map(q => q.question_id.toString()) || []);
 
-    // Ensure user.sheets exists before calling .find()
-    const userSheetProgress =
-      Array.isArray(user.sheets) && user.sheets.length > 0
-        ? user.sheets.find((s) => s.sheet_id?.toString() === sheetId)
-        : null;
-
-    // Create a set of solved question IDs for fast lookup
-    const solvedQuestionsSet = new Set();
-    if (
-      userSheetProgress &&
-      Array.isArray(userSheetProgress.solved_questions)
-    ) {
-      userSheetProgress.solved_questions.forEach((q) => {
-        if (q.question_id) {
-          solvedQuestionsSet.add(q.question_id.toString());
-        }
-      });
-    }
-
-    const groupedQuestions = {};
+    const grouped = {};
     let totalSolved = 0;
 
-    // Group questions by topic and mark them as solved or not
-    sheet.questions.forEach((question) => {
-      const topic = question.topic;
+    sheet.questions.forEach((q) => {
+      const topic = q.topic;
+      grouped[topic] = grouped[topic] || [];
 
-      if (!groupedQuestions[topic]) {
-        groupedQuestions[topic] = [];
-      }
+      const note = notes.find(n => n.question_id?.toString() === q._id.toString());
+      const isSolved = solvedSet.has(q._id.toString());
 
-      // Find the note for this question (Fix: Use `question_id` as per your schema)
-      const note = questionNotes.find(
-        (n) => n.question_id.toString() === question._id.toString()
-      );
-
-      const isSolved = solvedQuestionsSet.has(question._id.toString());
-
-      groupedQuestions[topic].push({
-        questionId: question._id,
-        title: question.title,
-        platform: question.platform,
-        url: question.url,
-        difficulty: question.difficulty,
-        topicTags: question.topicTags,
+      grouped[topic].push({
+        questionId: q._id,
+        title: q.title,
+        platform: q.platform,
+        url: q.url,
+        difficulty: q.difficulty,
+        topicTags: q.topicTags,
         status: isSolved ? "Completed" : "Not Attempted",
-        noteId: note ? note._id : null, // Include noteId if available
+        noteId: note?._id || null,
       });
 
       if (isSolved) totalSolved++;
     });
 
-    // Convert grouped questions into array format
-    const formattedResponse = Object.keys(groupedQuestions).map((topic) => ({
-      topic,
-      questions: groupedQuestions[topic],
-    }));
+    const formatted = Object.entries(grouped).map(([topic, questions]) => ({ topic, questions }));
 
     return res.status(200).json({
       success: true,
-      description: sheet.description,
       title: sheet.title,
+      description: sheet.description,
       totalquestion: sheet.questions.length,
-      totalsolved: totalSolved, // Number of solved questions
-      data: formattedResponse,
+      totalsolved: totalSolved,
+      data: formatted,
     });
   } catch (error) {
-    console.error("Error fetching sheet by ID:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Server error. Please try again later.",
-    });
+    console.error("Get Sheet by ID Error:", error);
+    return res.status(500).json({ error: "Server error." });
   }
 };
 
+// ************************ Get Followed Sheets ************************
 const handleGetFollowedSheets = async (req, res) => {
   try {
-    const userId = req.user.id; // Extract user ID from request params
-
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required" });
-    }
-
-    // Find user and populate their followed sheets
+    const userId = req.user.id;
     const user = await User.findById(userId).populate("sheets.sheet_id");
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found." });
 
-    // Extract and structure followed sheets
-    const followedSheets = user.sheets.map(
-      ({ sheet_id, solved_questions }) => ({
-        id: sheet_id._id,
-        title: sheet_id.title,
-        description: sheet_id.description,
-        totalQuestions: sheet_id.questions.length,
-        solvedQuestions: solved_questions.length,
-      })
-    );
+    const followedSheets = user.sheets.map(({ sheet_id, solved_questions }) => ({
+      id: sheet_id._id,
+      title: sheet_id.title,
+      description: sheet_id.description,
+      totalQuestions: sheet_id.questions.length,
+      solvedQuestions: solved_questions.length,
+    }));
 
-    return res.status(200).json({
-      success: true,
-      data: followedSheets,
-    });
+    return res.status(200).json({ success: true, data: followedSheets });
   } catch (error) {
-    console.error("Error fetching followed sheets:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Server error. Please try again later.",
-    });
+    console.error("Get Followed Sheets Error:", error);
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 };
+
 export {
   handleCreateSheet,
   handleFollowSheet,
