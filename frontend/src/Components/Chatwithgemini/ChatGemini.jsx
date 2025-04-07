@@ -26,9 +26,9 @@ function ChatGemini() {
     setMessages((prev) => [...prev, userMessage]); // Show user question instantly
 
     try {
-      const res = await axios.post("http://localhost:4000/api/gemini", { question });
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/aiagent`, { question });
 
-      const aiMessage = { type: "ai", text: res.data.geminiResponse };
+      const aiMessage = { type: "ai", text: res.data.aiResponse };
       setMessages((prev) => [...prev, aiMessage]); // Show AI response
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");

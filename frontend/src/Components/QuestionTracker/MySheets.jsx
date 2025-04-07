@@ -13,7 +13,7 @@ const MySheets = () => {
     useEffect(() => {
         if (!user?._id) return; // ✅ Corrected user ID check
 
-        axios.get(`http://localhost:4000/api/sheets/followed-sheets`)
+        axios.get(`${import.meta.env.VITE_API_URL}/api/sheets/followed/list`)
             .then(({ data }) => setSheets(data?.data || []))
             .catch(() => setSheets([]))
             .finally(() => setLoading(false));

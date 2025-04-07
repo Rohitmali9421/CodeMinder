@@ -17,7 +17,7 @@ function DevStats() {
     useEffect(() => {
         const fetchGitHubData = async () => {
             try {
-                const { data } = await axios.get(`http://localhost:4000/api/github/Rohitmali9421`);
+                const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/profile/github?refresh=true`);
 
                 console.log("GitHub API Response:", data);
 

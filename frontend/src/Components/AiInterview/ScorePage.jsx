@@ -20,7 +20,7 @@ const ScorePage = () => {
   useEffect(() => {
     const getAllInterviewData = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/AiInterview/get/${interviewId}`, );
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/get/${interviewId}`, );
         dispatch(setSingleInterview(response.data));
       } catch (error) {
         console.error("Error fetching interview:", error);

@@ -12,7 +12,7 @@ const Explore = () => {
     // Function to fetch sheets
     const fetchSheets = async () => {
         try {
-            const response = await axios.get("http://localhost:4000/api/sheets");
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/sheets`);
             setSheets(response.data?.data || []);
         } catch (error) {
             console.error("Error fetching sheets:", error);

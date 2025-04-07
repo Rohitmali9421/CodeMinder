@@ -27,7 +27,7 @@ export default function DropdownTable({ topics, sheetId }) {
 
     const markAsSolved = async (questionId) => {
         try {
-            await axios.post("http://localhost:4000/api/sheets/mark-solved", {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/sheets/question/mark-solved`, {
                 sheetId,
                 questionId
             });
@@ -46,7 +46,7 @@ export default function DropdownTable({ topics, sheetId }) {
         }
 
         try {
-            const response = await axios.get(`http://localhost:4000/api/notes/${question.noteId}`);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/notes/${question.noteId}`);
 
             if (response.data.success) {
                 setExistingNote(response.data.note);
@@ -70,13 +70,15 @@ export default function DropdownTable({ topics, sheetId }) {
         if (!selectedQuestion || !noteContent || !noteName) return;
         try {
             const response = existingNote
-                ? await axios.put(`http://localhost:4000/api/notes/update-note/${selectedQuestion.noteId}`, {
+                ? await axios.put(`${import.meta.env.VITE_API_URL}/api/notes/update`, {
                     content: noteContent,
-                    name: noteName,
+                    noteId:selectedQuestion.noteId
+                    
                 })
-                : await axios.post("http://localhost:4000/api/notes/createquestionnote", {
+                : await axios.post(`${import.meta.env.VITE_API_URL}/api/notes/create`, {
                     question_id: selectedQuestion.questionId,
                     content: noteContent,
+                    type: "question" 
                 });
 
             if (response.data.success) {

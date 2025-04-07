@@ -1,27 +1,23 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import CalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import DSATopicAnalysis from "./DSATopicAnalysis";
 import Stats from "./Stats";
-import { useSelector } from "react-redux";
-
 
 const LeetCodeStats = () => {
     const [data, setData] = useState(null);
     const [heatmapData, setHeatmapData] = useState([]);
-    const [totalContributions, setTotalContributions] = useState(0);
-    const [streak, setStreak] = useState({ maxStreak: 0, currentStreak: 0 });
     const [showMore, setShowMore] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { user } = useSelector((state) => state.auth);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`http://localhost:4000/api/leetcode/${user?.platforms.leetcode}`);
-                if (!response.ok) throw new Error("Failed to fetch data");
-                const result = await response.json();
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/profile/leetcode?refresh=true`);
+                const result = response.data;
 
                 setData(result);
 
@@ -32,13 +28,9 @@ const LeetCodeStats = () => {
                     }));
 
                     setHeatmapData(formattedData);
-                    setTotalContributions(formattedData.reduce((sum, entry) => sum + entry.count, 0));
-
-                    // Streak Calculation
-                    calculateStreak(formattedData);
                 }
             } catch (err) {
-                setError(err.message);
+                setError(err.response?.data?.message || err.message);
             } finally {
                 setLoading(false);
             }
@@ -47,40 +39,22 @@ const LeetCodeStats = () => {
         fetchData();
     }, []);
 
-    // Function to calculate max streak and current streak
-    const calculateStreak = (formattedData) => {
-        const streakData = formattedData.filter(entry => entry.count > 0).map(entry => entry.date).sort();
-        let maxStreak = 0, currentStreak = 0, tempStreak = 0;
-        const today = new Date().toISOString().split("T")[0];
-
-        for (let i = 0; i < streakData.length; i++) {
-            if (i === 0 || new Date(streakData[i]) - new Date(streakData[i - 1]) === 86400000) {
-                tempStreak++; // Consecutive day
-            } else {
-                maxStreak = Math.max(maxStreak, tempStreak);
-                tempStreak = 1; // Reset streak
-            }
-            if (streakData[i] === today) currentStreak = tempStreak; // Active streak till today
-        }
-        maxStreak = Math.max(maxStreak, tempStreak);
-
-        setStreak({ maxStreak, currentStreak });
-    };
-
     if (loading) return <p className="text-center text-gray-500">Loading...</p>;
     if (error) return <p className="text-center text-red-500">{error}</p>;
 
     return (
         <div className="flex flex-col gap-4">
             <div className="grid w-full gap-4 lg:grid-cols-5">
+                {/* Stats Cards */}
                 <div className="col-span-2 grid md:grid-cols-2 gap-4">
                     <StatCard title="Total Questions" value={data?.stats?.find(stat => stat.difficulty === "All")?.count || 0} />
                     <StatCard title="Total Active Days" value={heatmapData.length} />
                 </div>
-                <div className="p-4 w-full bg-white border rounded-lg shadow-sm lg:col-span-3">
-                    
-                    <div className=" flex justify-center">
-                        <div className="p-4 border rounded-lg shadow-sm bg-gray-50 w-full">
+
+                {/* Responsive Heatmap */}
+                <div className="w-full bg-white border rounded-lg shadow-sm lg:col-span-3 p-2 sm:p-4">
+                    <div className="w-full overflow-x-auto">
+                        <div className="p-2 sm:p-4 border rounded-lg shadow-sm bg-gray-50 w-full">
                             <CalendarHeatmap
                                 startDate={new Date(new Date().setDate(new Date().getDate() - 365))}
                                 endDate={new Date()}
@@ -101,18 +75,21 @@ const LeetCodeStats = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Awards & Stats */}
             <div className="grid grid-cols-2 gap-4">
                 <AwardsSection badges={data?.awards} showMore={showMore} setShowMore={setShowMore} />
-                <div >
+                <div>
                     <Stats data={data?.stats} />
                 </div>
             </div>
+
+            {/* Topic Analysis */}
             <DSATopicAnalysis topicData={data?.topicAnalysisStats.topicWiseDistribution || []} />
         </div>
     );
 };
 
-// Component for displaying statistics
 const StatCard = ({ title, value }) => (
     <div className="flex flex-col items-center justify-center p-4 bg-white border rounded-lg shadow-sm">
         <div className="font-semibold text-gray-500">{title}</div>
@@ -120,7 +97,6 @@ const StatCard = ({ title, value }) => (
     </div>
 );
 
-// Component for displaying awards
 const AwardsSection = ({ badges, showMore, setShowMore }) => (
     <div className="p-4 bg-white border rounded-lg shadow-sm">
         <div className="flex justify-between items-center">
