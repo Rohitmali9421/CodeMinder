@@ -1,14 +1,13 @@
 import axios from "axios";
 import { request, gql } from "graphql-request";
-import dotenv from "dotenv";
+import dotenv from "dotenv"; // Adjust path if needed
+import User from "../Model/User.js";
+import GitHubData from "../Model/GitHubData.js";
 
 dotenv.config();
 
-// GitHub API URLs
 const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
-
-// GitHub Token (Set in .env file)
 const TOKEN = process.env.GITHUB_TOKEN;
 
 const headers = {
@@ -16,27 +15,38 @@ const headers = {
   "User-Agent": "Node.js",
 };
 
-// 📌 Fetch all GitHub user data in a single function
 const getGitHubUserData = async (req, res) => {
   try {
-    const username = req.params.username;
+    const userId = req.user.id;
+    const refresh = req.query.refresh === "true";
 
-    // Fetch user profile
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const username = user.platforms.github;
+    if (!username) return res.status(400).json({ error: "GitHub username not linked" });
+
+    // ⏱️ Check cached data
+    const existingData = await GitHubData.findOne({ userId });
+
+    const isDataValid =
+      existingData &&
+      !refresh &&
+      new Date() - new Date(existingData.lastUpdated) < 6 * 60 * 60 * 1000; // 6 hours
+
+    if (isDataValid) {
+      console.log("✅ Returning cached GitHub data");
+      return res.status(200).json(existingData.data);
+    }
+
+    console.log(`🔄 Refreshing GitHub data for ${username}...`);
+
     const userProfilePromise = axios.get(`${GITHUB_API_URL}/users/${username}`, { headers });
-
-    // Fetch user repositories
     const reposPromise = axios.get(`${GITHUB_API_URL}/users/${username}/repos?per_page=100`, { headers });
-
-    // Fetch pull requests
     const prPromise = axios.get(`${GITHUB_API_URL}/search/issues?q=author:${username}+is:pr`, { headers });
-
-    // Fetch issues
     const issuesPromise = axios.get(`${GITHUB_API_URL}/search/issues?q=author:${username}+is:issue`, { headers });
-
-    // Fetch starred repositories
     const starsPromise = axios.get(`${GITHUB_API_URL}/users/${username}/starred`, { headers });
 
-    // Fetch contribution heatmap and commits using GraphQL
     const graphqlQuery = gql`
       query {
         user(login: "${username}") {
@@ -72,9 +82,7 @@ const getGitHubUserData = async (req, res) => {
 
     const graphqlPromise = request(GITHUB_GRAPHQL_URL, graphqlQuery, {}, headers);
 
-    // Await all promises in parallel
-    const [userProfile, repos, prData, issuesData, starsData, graphqlData] = await Promise.all([
-      userProfilePromise,
+    const [repos, prData, issuesData, starsData, graphqlData] = await Promise.all([
       reposPromise,
       prPromise,
       issuesPromise,
@@ -82,7 +90,7 @@ const getGitHubUserData = async (req, res) => {
       graphqlPromise,
     ]);
 
-    // Process language usage from repositories
+    // 🔍 Language usage stats
     const languages = {};
     let totalSize = 0;
     repos.data.forEach((repo) => {
@@ -98,34 +106,40 @@ const getGitHubUserData = async (req, res) => {
       percentage: ((size / totalSize) * 100).toFixed(2),
     }));
 
-    // Process contribution heatmap
+    // 🔥 Heatmap
     const heatmap = graphqlData.user.contributionsCollection.contributionCalendar.weeks.flatMap(
       (week) => week.contributionDays
     );
 
-    // 🔥 **Fixed Commit Calculation**
     let totalCommits = graphqlData.user.contributionsCollection.totalCommitContributions;
 
-    // Add commit counts from repositories (excluding forks)
     graphqlData.user.repositories.nodes.forEach((repo) => {
       if (!repo.isFork && repo.defaultBranchRef?.target?.history?.totalCount) {
         totalCommits += repo.defaultBranchRef.target.history.totalCount;
       }
     });
 
-    // Construct final response
-    return res.json({
-      username: userProfile.data.login,
+    const githubData = {
+      username,
       languages: languageStats,
       stats: {
         stars: starsData.data.length || 0,
-        commits: totalCommits, // ✅ Corrected Commit Count
+        commits: totalCommits,
         pullRequests: prData.data.total_count || 0,
         issues: issuesData.data.total_count || 0,
       },
       totalContributions: totalCommits,
       heatmap,
-    });
+    };
+
+    // 💾 Save to DB
+    await GitHubData.findOneAndUpdate(
+      { userId },
+      { data: githubData, lastUpdated: new Date() },
+      { upsert: true }
+    );
+
+    return res.status(200).json(githubData);
   } catch (error) {
     console.error("GitHub Data Fetch Error:", error.message);
     return res.status(500).json({ error: error.message });

@@ -1,6 +1,9 @@
-import axios from "axios";
+// controllers/leetcodeController.js
 
-// Base URL and Headers for LeetCode API
+import axios from "axios";
+import User from "../Model/User.js";
+import LeetCodeData from "../Model/LeetCodeData.js";
+
 const LEETCODE_URL = "https://leetcode.com/graphql";
 const HEADERS = {
   "Content-Type": "application/json",
@@ -9,7 +12,7 @@ const HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
 };
 
-// Function to fetch submission stats
+// Fetch from LeetCode APIs
 const fetchLeetCodeStats = async (username) => {
   const data = {
     query: `query userProfile($username: String!) {
@@ -25,15 +28,11 @@ const fetchLeetCodeStats = async (username) => {
     }`,
     variables: { username },
   };
-
   const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-
   if (!response.data?.data?.matchedUser) throw new Error("User not found");
-
   return response.data.data.matchedUser.submitStatsGlobal.acSubmissionNum;
 };
 
-// Function to fetch submission calendar
 const fetchSubmissionCalendar = async (username) => {
   const data = {
     query: `query userProfile($username: String!) {
@@ -44,15 +43,11 @@ const fetchSubmissionCalendar = async (username) => {
     }`,
     variables: { username },
   };
-
   const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-
   if (!response.data?.data?.matchedUser) throw new Error("User not found");
-
   return JSON.parse(response.data.data.matchedUser.submissionCalendar);
 };
 
-// Function to fetch topic-wise stats
 const fetchLeetCodeTopics = async (username) => {
   const data = {
     query: `query userProfile($username: String!) {
@@ -67,16 +62,17 @@ const fetchLeetCodeTopics = async (username) => {
     }`,
     variables: { username },
   };
-
   const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-
   if (!response.data?.data?.matchedUser) throw new Error("User not found");
 
   const { advanced, intermediate, fundamental } =
     response.data.data.matchedUser.tagProblemCounts;
 
-  // Aggregate problems solved per topic
-  const topicWiseDistribution = [...advanced, ...intermediate, ...fundamental].reduce((acc, topic) => {
+  const topicWiseDistribution = [
+    ...advanced,
+    ...intermediate,
+    ...fundamental,
+  ].reduce((acc, topic) => {
     acc[topic.tagName] = (acc[topic.tagName] || 0) + topic.problemsSolved;
     return acc;
   }, {});
@@ -84,7 +80,6 @@ const fetchLeetCodeTopics = async (username) => {
   return topicWiseDistribution;
 };
 
-// Function to fetch awards (badges)
 const fetchLeetCodeAwards = async (username) => {
   const data = {
     query: `query userProfile($username: String!) {
@@ -99,9 +94,7 @@ const fetchLeetCodeAwards = async (username) => {
     }`,
     variables: { username },
   };
-
   const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-
   if (!response.data?.data?.matchedUser) throw new Error("User not found");
 
   return response.data.data.matchedUser.badges.map((badge) => ({
@@ -111,34 +104,76 @@ const fetchLeetCodeAwards = async (username) => {
   }));
 };
 
-// Controller to fetch all LeetCode stats in one request
+// Controller
 const getAllLeetCodeData = async (req, res) => {
   try {
-    const { username } = req.params;
+    const userId = req.user.id;
 
-    if (!username) return res.status(400).json({ error: "Username is required" });
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
 
-    console.log(`🔹 Fetching LeetCode data for ${username}...`);
+    // 🔍 Fetch user from DB and extract Codeforces handle
+    const user = await User.findById(userId);
+    if (!user || !user.platforms || !user.platforms.leetcode) {
+      return res
+        .status(404)
+        .json({ error: "Leetcode username not found for this user" });
+    }
 
-    const [stats, submissionCalendar, topicWiseDistribution, awards] = await Promise.all([
-      fetchLeetCodeStats(username),
-      fetchSubmissionCalendar(username),
-      fetchLeetCodeTopics(username),
-      fetchLeetCodeAwards(username),
-    ]);
+    const username = user.platforms.leetcode;
+    const refresh = req.query.refresh === "true";
 
-    console.log(`✅ Successfully fetched all LeetCode data for ${username}`);
+    if (!username)
+      return res.status(400).json({ error: "Username is required" });
+
+    let profile = await LeetCodeData.findOne({ username });
+
+    const oneDayOld =
+      profile && new Date() - profile.lastUpdated > 24 * 60 * 60 * 1000;
+
+    if (!profile || refresh || oneDayOld) {
+      console.log(`🔁 Fetching fresh LeetCode data for ${username}...`);
+      const [stats, submissionCalendar, topicWiseDistribution, awards] =
+        await Promise.all([
+          fetchLeetCodeStats(username),
+          fetchSubmissionCalendar(username),
+          fetchLeetCodeTopics(username),
+          fetchLeetCodeAwards(username),
+        ]);
+
+      const newData = {
+        userId, // ✅ FIX: add userId as required in schema
+        username,
+        stats,
+        submissionCalendar,
+        topicAnalysisStats: { topicWiseDistribution },
+        awards,
+        lastUpdated: new Date(),
+      };
+
+      if (!profile) {
+        profile = new LeetCodeData(newData);
+      } else {
+        Object.assign(profile, newData);
+      }
+
+      await profile.save();
+    } else {
+      console.log(`📦 Returning cached LeetCode data for ${username}`);
+    }
 
     return res.status(200).json({
-      username,
-      stats,
-      submissionCalendar,
-      topicAnalysisStats: { topicWiseDistribution },
-      awards,
+      username: profile.username,
+      stats: profile.stats,
+      submissionCalendar: profile.submissionCalendar,
+      topicAnalysisStats: profile.topicAnalysisStats,
+      awards: profile.awards,
+      lastUpdated: profile.lastUpdated,
     });
   } catch (error) {
     console.error("❌ Error fetching LeetCode data:", error.message);
-    return res.status(500).json({ error: error.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ error: error.message || "Internal Server Error" });
   }
 };
 

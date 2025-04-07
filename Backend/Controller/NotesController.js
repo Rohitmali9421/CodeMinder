@@ -1,32 +1,88 @@
 import mongoose from "mongoose";
-import Notes from "../Model/Notes.js";
-import GeneralNotes from "../Model/GeneralNotes.js";
+import Note from "../Model/Notes.js";
 
-// Update question notes
+// Create a new note
+const createNote = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type, content, question_id, noteName } = req.body;
+
+    if (!type || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Type and content are required",
+      });
+    }
+
+    if (type === "question" && !question_id) {
+      return res.status(400).json({
+        success: false,
+        message: "question_id is required for question notes",
+      });
+    }
+
+    if (type === "general" && !noteName) {
+      return res.status(400).json({
+        success: false,
+        message: "noteName is required for general notes",
+      });
+    }
+
+    const newNote = new Note({
+      user: userId,
+      type,
+      content,
+      question_id: type === "question" ? question_id : undefined,
+      noteName: type === "general" ? noteName : undefined,
+    });
+
+    await newNote.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Note created successfully",
+      note: formatNoteResponse(newNote),
+    });
+  } catch (error) {
+    console.error("Error creating note:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+// Update a note
 const handleUpdateNotes = async (req, res) => {
   try {
-    const { noteId } = req.params;
-    const { content } = req.body;
+    const { noteId, content, noteName } = req.body;
     const userId = req.user.id;
 
-    if (!userId || !content) {
-      return res.status(400).json({ success: false, message: "User ID and new content are required" });
+    if (!noteId || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "noteId and content are required",
+      });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(noteId)) {
-      return res.status(400).json({ success: false, message: "Invalid note ID format" });
-    }
+    const note = await Note.findById(noteId);
 
-    const note = await Notes.findById(noteId);
     if (!note) {
-      return res.status(404).json({ success: false, message: "Note not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+      });
     }
 
     if (note.user.toString() !== userId) {
-      return res.status(403).json({ success: false, message: "Unauthorized: You can only update your own notes" });
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
     note.content = content;
+    if (note.type === "general" && noteName) {
+      note.noteName = noteName;
+    }
+
     await note.save();
 
     return res.status(200).json({
@@ -36,59 +92,83 @@ const handleUpdateNotes = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating note:", error);
-    return res.status(500).json({ success: false, message: "Server error. Please try again later." });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
-// Fetch General Notes of a user
+// Get user's general notes
 const getUserNotes = async (req, res) => {
   try {
     const userId = req.user.id;
-    const notes = await GeneralNotes.find({ user: userId });
+    const notes = await Note.find({ user: userId, type: "general" });
 
     return res.status(200).json({
       success: true,
-      notes: notes.length ? notes.map(formatGeneralNoteResponse) : [],
-      message: notes.length ? "General notes fetched successfully" : "No notes found for this user",
+      notes: notes.map(formatNoteResponse),
+      message: notes.length
+        ? "General notes fetched successfully"
+        : "No general notes found",
     });
   } catch (error) {
-    console.error("Error fetching user notes:", error);
+    console.error("Error fetching general notes:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// Fetch Question Notes of a user
+// Get user's question notes
 const getUserQuestionNotes = async (req, res) => {
   try {
     const userId = req.user.id;
-    const notes = await Notes.find({ user: userId })
-      .populate("question_id", "title description")
-      .select("-__v -user");
+    const notes = await Note.find({ user: userId, type: "question" }).populate(
+      "question_id",
+      "title description"
+    );
 
     return res.status(200).json({
       success: true,
-      notes: notes.length ? notes.map(formatNoteResponse) : [],
-      message: notes.length ? "Question notes fetched successfully" : "No notes found for this user",
+      notes: notes.map(formatNoteResponse),
+      message: notes.length
+        ? "Question notes fetched successfully"
+        : "No question notes found",
     });
   } catch (error) {
-    console.error("Error fetching user question notes:", error);
+    console.error("Error fetching question notes:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// Fetch a single Question Note by ID
+// Get note by ID (with question title and description if applicable)
 const handleGetNoteById = async (req, res) => {
   try {
     const { noteId } = req.params;
     const userId = req.user.id;
 
-    const note = await Notes.findById(noteId).populate("question_id", "title description");
+    if (!mongoose.Types.ObjectId.isValid(noteId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID format",
+      });
+    }
+
+    const note = await Note.findById(noteId).populate(
+      "question_id",
+      "title description"
+    );
+
     if (!note) {
-      return res.status(404).json({ success: false, message: "Note not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Note not found" });
     }
 
     if (note.user.toString() !== userId) {
-      return res.status(403).json({ success: false, message: "Unauthorized: You can only view your own notes" });
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
     return res.status(200).json({
@@ -98,121 +178,37 @@ const handleGetNoteById = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching note:", error);
-    return res.status(500).json({ success: false, message: "Server error. Please try again later." });
-  }
-};
-
-// Create a General Note
-const createGeneralNote = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { noteName, detail } = req.body;
-
-    if (!noteName || !detail) {
-      return res.status(400).json({ success: false, message: "Note name and detail are required" });
-    }
-
-    const newNote = new GeneralNotes({ user: userId, noteName, detail });
-    await newNote.save();
-
-    res.status(201).json({
-      success: true,
-      message: "General note created successfully",
-      note: formatGeneralNoteResponse(newNote),
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
     });
-  } catch (error) {
-    console.error("Error creating general note:", error);
-    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// Update a General Note
-const updateGeneralNote = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { noteName, detail } = req.body;
-
-    const updatedNote = await GeneralNotes.findByIdAndUpdate(
-      id,
-      { noteName, detail },
-    );
-
-    if (!updatedNote) {
-      return res.status(404).json({ success: false, message: "Note not found" });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "General note updated successfully",
-      note: formatGeneralNoteResponse(updatedNote),
-    });
-  } catch (error) {
-    console.error("Error updating general note:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
-};
-
- const getQuestionNoteById = async (req, res) => {
-    try {
-        const { id } = req.params; // Extract noteId from request parameters
-        const note = await Notes.findById(id).populate("user", "name email").populate("question_id", "title");
-
-        if (!note) {
-            return res.status(404).json({ success: false, message: "Note not found" });
-        }
-
-        res.status(200).json({ success: true, note });
-    } catch (error) {
-        console.error("Error fetching note:", error);
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-};
-// Create a Question Note
-const createNote = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { question_id, content } = req.body;
-
-    if (!userId || !question_id || !content) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
-    }
-
-    const newNote = new Notes({ user: userId, question_id, content });
-    await newNote.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Question note created successfully",
-      note: formatNoteResponse(newNote),
-    });
-  } catch (error) {
-    console.error("Error creating question note:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
-
-// Helper functions for consistent response formatting
+// Format response
 const formatNoteResponse = (note) => ({
   noteId: note._id,
-  question: note.question_id
-    ? { id: note.question_id._id, title: note.question_id.title, description: note.question_id.description }
-    : null,
+  type: note.type,
   content: note.content,
-});
-
-const formatGeneralNoteResponse = (note) => ({
-  noteId: note._id,
-  noteName: note.noteName,
-  detail: note.detail,
+  ...(note.type === "question" && note.question_id
+    ? {
+        question: {
+          id: note.question_id._id,
+          title: note.question_id.title,
+        },
+      }
+    : {}),
+  ...(note.type === "general"
+    ? {
+        noteName: note.noteName,
+      }
+    : {}),
 });
 
 export {
+  createNote,
   handleUpdateNotes,
   handleGetNoteById,
   getUserNotes,
-  createGeneralNote,
   getUserQuestionNotes,
-  updateGeneralNote,
-  createNote,
-  getQuestionNoteById
 };
