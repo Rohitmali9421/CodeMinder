@@ -5,7 +5,6 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import { motion } from "framer-motion";
 import Webcam from "react-webcam";
-import { setSingleInterview } from "@/Features/Auth/interviewSlice";
 
 
 const AiInterview = () => {

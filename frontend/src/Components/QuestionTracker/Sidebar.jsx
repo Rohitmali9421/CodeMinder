@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { FaClipboardList, FaSearch, FaStickyNote, FaChartBar, FaLayerGroup } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
+
 
 const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(false);

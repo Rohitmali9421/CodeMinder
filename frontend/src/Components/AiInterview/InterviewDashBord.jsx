@@ -1,4 +1,5 @@
-import { setUserInterviews } from "@/Features/Auth/interviewSlice";
+import { setUserInterviews } from "../../Features/Auth/interviewSlice";
+
 import axios from "axios";
 import { motion } from "framer-motion";
 import { useEffect } from "react";

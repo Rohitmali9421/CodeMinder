@@ -5,13 +5,13 @@ import axios from "axios";
 import { FaCheckCircle, FaRegCircle } from "react-icons/fa";
 import { FiChevronDown, FiChevronUp, FiClipboard } from "react-icons/fi";
 import { FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableRow, TableCell } from "@/components/ui/table";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
+import { Badge } from "../ui/badge";
+import { Card } from "../ui/card";
+import { Table, TableBody, TableRow, TableCell } from "../ui/table";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
+import { Input } from "../ui/input";
 import { Editor } from "@tinymce/tinymce-react";
+import { Button } from "../ui/button";
 
 export default function DropdownTable({ topics, sheetId }) {
     const [openTopics, setOpenTopics] = useState({});

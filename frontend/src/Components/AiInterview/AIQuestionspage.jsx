@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import Webcam from "react-webcam";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { RiSpeakAiFill } from "react-icons/ri";
-import { setSingleInterview } from "@/Features/Auth/interviewSlice";
 
 
 const AIQuestionsPage = () => {

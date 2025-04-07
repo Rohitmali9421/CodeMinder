@@ -2,12 +2,12 @@ import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { signupUser } from "@/Features/Auth/AuthSlice";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { signupUser } from "../Features/Auth/AuthSlice";
+import { Card, CardContent, CardHeader, CardTitle } from "../Components/ui/card";
 
-import { Label } from "@/components/ui/label";
-import { Input } from "@/Components/ui/input";
+import { Label } from "../Components/ui/label";
+import { Input } from "../Components/ui/input";
+import { Button } from "../Components/ui/button";
 
 const SignUp = () => {
     const dispatch = useDispatch();

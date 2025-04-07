@@ -3,10 +3,8 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { useState } from "react";
-import { setSingleInterview } from "@/Features/Auth/interviewSlice";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 

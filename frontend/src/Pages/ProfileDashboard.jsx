@@ -1,8 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
+import { Avatar } from "./components/ui/avatar";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
-import { Separator } from "@/components/ui/separator";
 
 const profileData = {
   name: "Prathmesh Sargar",

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import SheetCard from "./SheetCard";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { Input } from "../ui/input";
 
 const Explore = () => {
     const [search, setSearch] = useState("");

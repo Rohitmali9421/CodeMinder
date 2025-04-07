@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"; // Import useParams
 import { PiBookmarkFill } from "react-icons/pi";
-import { Button } from "@/components/ui/button"; // ShadCN Button
+import { Button } from "../ui/button"; // ShadCN Button
 import DropdownTable from "./DropdownTable";
 import axios from "axios";
 import { PieChart, Pie, Cell } from "recharts";

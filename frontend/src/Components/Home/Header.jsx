@@ -1,10 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { checkAuth, logoutUser } from "@/Features/Auth/AuthSlice";
+import { checkAuth, logoutUser } from "../../Features/Auth/AuthSlice";
 
 const Header = () => {
     const dispatch = useDispatch();

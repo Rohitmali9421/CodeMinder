@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { FaGithub } from "react-icons/fa";
 import { SiLeetcode, SiGeeksforgeeks, SiCodeforces } from "react-icons/si";
 import { MdWarning } from "react-icons/md";
-import { editUser } from "@/Features/Auth/AuthSlice";
+import { editUser } from "../Features/Auth/AuthSlice";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 

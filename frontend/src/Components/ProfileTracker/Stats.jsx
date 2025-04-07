@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { PieChart, Pie, Cell } from "recharts";
+import { Card, CardContent } from "../ui/card";
 
 const COLORS = {
   Easy: "#22c55e",
