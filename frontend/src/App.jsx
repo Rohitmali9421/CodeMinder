@@ -29,8 +29,8 @@ import AiInterview from './Components/AiInterview/AiInterview';
 import AIQuestionsPage from './Components/AiInterview/AIQuestionspage';
 import CommunityChat from './Components/chat/ChatCommunity';
 import ScorePage from './Components/AiInterview/ScorePage';
-import ChatGemini from './Components/Chatwithgemini/chatgemini';
 import ATSResume from './Components/chat/ATSResume';
+import ChatGemini from './Components/Chatwithgemini/ChatGemini';
 // import ATSResume from './Components/chat/ATSResume';
 
 
