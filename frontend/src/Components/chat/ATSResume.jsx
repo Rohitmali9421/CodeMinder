@@ -60,7 +60,7 @@ function ATSResume() {
       setResponse(res.data);
 
       const jobRes = await axios.get(
-        `${import.meta.env.VITE_API_URL}/jobs?category=${category}`
+        `${import.meta.env.VITE_API_URL}/api/jobs?category=${category}`
       );
       setJobs(jobRes.data);
     } catch (err) {
