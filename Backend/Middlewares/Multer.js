@@ -1,20 +1,7 @@
 import multer from 'multer';
-import fs from 'fs';
 
-// Ensure ./public exists
-const uploadDir = './public';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
+// Use in-memory storage (no disk write)
+const storage = multer.memoryStorage();
 
 const upload = multer({ storage });
 
@@ -29,7 +16,10 @@ const uploadMiddleware = (req, res, next) => {
       return res.status(400).json({ error: 'File is required' });
     }
 
-    req.body.filepath = req.file.path; // optional usage
+    // Access the file buffer via req.file.buffer
+    req.body.fileBuffer = req.file.buffer;
+    req.body.fileName = req.file.originalname;
+
     next();
   });
 };

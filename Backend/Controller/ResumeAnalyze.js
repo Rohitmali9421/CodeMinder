@@ -1,6 +1,3 @@
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
@@ -8,13 +5,9 @@ import { jsonrepair } from "jsonrepair";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// 📄 Extract Text from PDF
-const extractTextFromPDF = async (filePath) => {
-  const data = await fs.readFile(filePath);
-  const loadingTask = pdfjsLib.getDocument({ data });
+// 📄 Extract Text from PDF from a Buffer
+const extractTextFromPDF = async (buffer) => {
+  const loadingTask = pdfjsLib.getDocument({ data: buffer });
   const pdf = await loadingTask.promise;
 
   let fullText = "";
@@ -76,7 +69,7 @@ ${resumeText}
 // 📤 API Endpoint
 const handleanalyzepdf = async (req, res) => {
   try {
-    if (!req.file || !req.file.path) {
+    if (!req.file || !req.file.buffer) {
       return res.status(400).json({ error: "No PDF file uploaded" });
     }
 
@@ -85,9 +78,7 @@ const handleanalyzepdf = async (req, res) => {
       return res.status(400).json({ error: "Job category is required" });
     }
 
-    const resumeText = await extractTextFromPDF(req.file.path);
-    await fs.unlink(req.file.path); // Clean up
-
+    const resumeText = await extractTextFromPDF(req.file.buffer);
     const evaluation = await analyzeResumeAgainstCategory(resumeText, category);
 
     res.json(evaluation);
