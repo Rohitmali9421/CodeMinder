@@ -23,7 +23,7 @@ const SheetDetails = () => {
     // Fetch Sheet Questions
     const fetchSheetQuestions = async () => {
         try {
-            const response = await axios.post(`http://localhost:4000/api/sheets/details`, {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/sheets/details`, {
                 sheetId: sheetId,
             });
             setTotal(response.data.totalquestion)
@@ -45,10 +45,9 @@ const SheetDetails = () => {
     // Follow/Unfollow Function
     const handleFollow = async () => {
         try {
-            await axios.post("http://localhost:4000/api/sheets/follow", {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/sheets/follow`, {
                 sheetId,
             });
-
             setIsFollowing(!isFollowing); // Toggle state
         } catch (error) {
             console.error("Error following sheet:", error);

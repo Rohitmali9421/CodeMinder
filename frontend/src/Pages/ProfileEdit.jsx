@@ -3,15 +3,16 @@ import { useSelector, useDispatch } from "react-redux";
 import { FaGithub } from "react-icons/fa";
 import { SiLeetcode, SiGeeksforgeeks, SiCodeforces } from "react-icons/si";
 import { MdWarning } from "react-icons/md";
-import axios from "axios";
+import { editUser } from "@/Features/Auth/AuthSlice";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ProfileEdit = () => {
-  const { user, token } = useSelector((state) => state.auth); // ✅ Extract user and token
+  const { user, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
-  // Initialize state with user data
-  const [name, setName] = useState(user?.name || "John Doe");
-  const [email, setEmail] = useState(user?.email || "example@example.com");
+  const [name, setName] = useState(user?.name);
+  const [email] = useState(user?.email);
   const [platforms, setPlatforms] = useState({
     github: user?.platforms?.github || "",
     leetcode: user?.platforms?.leetcode || "",
@@ -19,13 +20,9 @@ const ProfileEdit = () => {
     codeforces: user?.platforms?.codeforces || "",
   });
 
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
-
   useEffect(() => {
     if (user) {
-      setName(user.name || "John Doe");
-      setEmail(user.email || "example@example.com");
+      setName(user.name);
       setPlatforms({
         github: user.platforms?.github || "",
         leetcode: user.platforms?.leetcode || "",
@@ -40,72 +37,51 @@ const ProfileEdit = () => {
   };
 
   const handleSaveChanges = async () => {
-    setLoading(true);
-    setMessage(null);
-
     try {
-      const response = await axios.put(
-        "http://localhost:4000/user/edit",
-        { name, platforms },
-        
-      );
-
-      setMessage({ type: "success", text: response.data.message });
-
-      // ✅ Update Redux state with new user data
-      dispatch({ type: "UPDATE_USER", payload: response.data.user });
-
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.error || "Failed to update profile. Try again!",
-      });
-    } finally {
-      setLoading(false);
+      const result =  dispatch(editUser({ name, platforms }));
+      if (editUser.fulfilled.match(result)) {
+        toast.success("Profile updated successfully!");
+      } else {
+        toast.error(result.payload || "Failed to update profile");
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred.");
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white border rounded-lg shadow-lg">
-      <h2 className="text-3xl font-semibold text-gray-800 text-center">Edit Profile</h2>
-
-      {/* Message Display */}
-      {message && (
-        <div
-          className={`mt-4 p-3 rounded-md text-white text-center ${
-            message.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+    <div className="w-full max-w-4xl mt-20 mx-auto p-8 bg-white border border-gray-200 rounded-2xl shadow-lg">
+      <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
+        Edit Profile
+      </h2>
 
       {/* Name Section */}
-      <div className="mt-6">
-        <label className="text-sm font-medium text-gray-700">Name</label>
+      <div className="mb-5">
+        <label className="block text-sm font-semibold text-gray-700">Name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="block w-full mt-1 p-3 border rounded-lg shadow-sm focus:ring focus:ring-blue-300"
+          className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring focus:ring-blue-300 focus:outline-none"
         />
       </div>
 
-      {/* Email Section (Not Editable) */}
-      <div className="mt-6">
-        <label className="text-sm font-medium text-gray-700">Email</label>
+      {/* Email Section */}
+      <div className="mb-5">
+        <label className="block text-sm font-semibold text-gray-700">Email</label>
         <input
           type="email"
           value={email}
           disabled
-          className="block w-full mt-1 p-3 border rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+          className="w-full mt-2 px-4 py-3 border rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
         />
       </div>
 
       {/* Platforms Section */}
-      <h3 className="text-2xl font-medium mt-8 text-center">Platforms</h3>
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <h3 className="text-2xl font-semibold text-center text-gray-800 mt-8 mb-4">
+        Coding Platforms
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {Object.keys(platforms).map((platform) => (
           <PlatformItem
             key={platform}
@@ -121,7 +97,9 @@ const ProfileEdit = () => {
       {/* Save Button */}
       <button
         onClick={handleSaveChanges}
-        className="w-full mt-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-lg font-medium shadow-md"
+        className={`w-full mt-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg transition duration-200 shadow-md hover:bg-blue-700 ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
         disabled={loading}
       >
         {loading ? "Saving..." : "Save Changes"}
@@ -131,15 +109,15 @@ const ProfileEdit = () => {
 };
 
 const PlatformItem = ({ icon, label, value, name, onChange }) => (
-  <div className="flex items-center gap-4 border p-3 rounded-lg shadow-sm bg-gray-50">
+  <div className="flex items-center gap-3 border p-4 rounded-xl shadow-sm bg-gray-50">
     {icon}
-    <span className="font-medium text-gray-800">{label}</span>
+    <span className="font-medium text-gray-700 w-28">{label}</span>
     <input
       type="text"
       name={name}
       value={value}
       onChange={onChange}
-      className="flex-1 p-2 border rounded-lg shadow-sm focus:ring focus:ring-blue-300"
+      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
       placeholder="Enter username"
     />
   </div>
@@ -148,9 +126,9 @@ const PlatformItem = ({ icon, label, value, name, onChange }) => (
 const getPlatformIcon = (platform) => {
   const icons = {
     github: <FaGithub className="w-6 h-6 text-gray-800" />,
-    leetcode: <SiLeetcode className="w-6 h-6 text-gray-800" />,
-    geeksforgeeks: <SiGeeksforgeeks className="w-6 h-6 text-gray-800" />,
-    codeforces: <SiCodeforces className="w-6 h-6 text-gray-800" />,
+    leetcode: <SiLeetcode className="w-6 h-6 text-orange-500" />,
+    geeksforgeeks: <SiGeeksforgeeks className="w-6 h-6 text-green-600" />,
+    codeforces: <SiCodeforces className="w-6 h-6 text-blue-600" />,
   };
   return icons[platform] || <MdWarning className="w-6 h-6 text-gray-800" />;
 };

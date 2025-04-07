@@ -5,15 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Editor } from "@tinymce/tinymce-react";
 import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
 
 export default function Notes() {
-    const [activeTab, setActiveTab] = useState("general"); 
+    const [activeTab, setActiveTab] = useState("general");
     const [noteContent, setNoteContent] = useState("");
     const [noteName, setNoteName] = useState("");
     const [generalNotes, setGeneralNotes] = useState([]);
     const [questionNotes, setQuestionNotes] = useState([]);
     const [selectedNoteId, setSelectedNoteId] = useState(null);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [noteType, setNoteType] = useState("general");
+    const [questionId, setQuestionId] = useState(null);
 
     useEffect(() => {
         activeTab === "general" ? fetchGeneralNotes() : fetchQuestionNotes();
@@ -21,7 +26,7 @@ export default function Notes() {
 
     const fetchGeneralNotes = async () => {
         try {
-            const response = await axios.get("http://localhost:4000/api/notes");
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/notes/general`);
             setGeneralNotes(response.data.notes);
         } catch (error) {
             console.error("Error fetching general notes:", error);
@@ -30,7 +35,7 @@ export default function Notes() {
 
     const fetchQuestionNotes = async () => {
         try {
-            const response = await axios.get("http://localhost:4000/api/notes/questionnotes");
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/notes/question`);
             setQuestionNotes(response.data.notes);
         } catch (error) {
             console.error("Error fetching question notes:", error);
@@ -39,6 +44,8 @@ export default function Notes() {
 
     const handleNoteClick = (note) => {
         setSelectedNoteId(note.noteId);
+        setNoteType(note.question ? "question" : "general");
+        setQuestionId(note.question?._id || null);
         setNoteName(note.question ? note.question.title : note.noteName || "Untitled");
         setNoteContent(note.content || note.detail || "");
         setIsEditorOpen(true);
@@ -46,21 +53,51 @@ export default function Notes() {
 
     const handleSave = async () => {
         try {
-            const endpoint = selectedNoteId
-                ? `http://localhost:4000/api/notes/${activeTab === "general" ? "general-notes" : "update-note"}/${selectedNoteId}`
-                : "http://localhost:4000/api/notes/create";
+            const baseUrl = import.meta.env.VITE_API_URL;
 
-            await axios.put(endpoint, { noteName, content: noteContent });
+            const payload = {
+                content: noteContent,
+                ...(selectedNoteId && { noteId: selectedNoteId }),
+                ...(noteType === "question"
+                    ? { type: "question", question_id: questionId }
+                    : { type: "general", noteName }),
+            };
+
+            const endpoint = selectedNoteId
+                ? `${baseUrl}/api/notes/update`
+                : `${baseUrl}/api/notes/create`;
+
+            const method = selectedNoteId ? "put" : "post";
+
+            await axios[method](endpoint, payload);
+
             fetchGeneralNotes();
             fetchQuestionNotes();
             setIsEditorOpen(false);
+            setSelectedNoteId(null);
+            setNoteContent("");
+            setNoteName("");
+            setQuestionId(null);
+
+            toast.success(selectedNoteId ? "Note updated successfully!" : "Note created successfully!");
         } catch (error) {
             console.error("Error saving note:", error);
+            toast.error("Something went wrong while saving the note.");
         }
+    };
+
+    const handleCreateNote = () => {
+        setNoteContent("");
+        setNoteName("");
+        setSelectedNoteId(null);
+        setQuestionId(null);
+        setNoteType(activeTab); // "general" or "questions"
+        setIsEditorOpen(true);
     };
 
     return (
         <div className="w-full p-4 border shadow-sm lg:mb-8 overflow-auto">
+            <ToastContainer />
             <section className="flex flex-col gap-4">
                 <div className="flex justify-between items-center gap-4">
                     <div className="relative flex-grow max-w-md">
@@ -112,7 +149,7 @@ export default function Notes() {
                                     <label htmlFor="noteName" className="text-sm font-medium flex items-center gap-2">
                                         <FileText className="w-5 h-5" /> Note Name:
                                     </label>
-                                    <Input id="noteName" placeholder="Untitled" maxLength={80} value={noteName} onChange={(e) => setNoteName(e.target.value)} />
+                                    <Input id="noteName" placeholder="Untitled" maxLength={80} value={noteName} onChange={(e) => setNoteName(e.target.value)} disabled={noteType === "question"} />
                                 </div>
                                 <Editor
                                     apiKey="06uys0mqhocineaoxtq8561s3od7hzci5bp9wjn4fzu2scdu"
@@ -130,7 +167,7 @@ export default function Notes() {
                             </>
                         ) : (
                             <div className="flex justify-center items-center h-full">
-                                <Button onClick={() => setIsEditorOpen(true)} className="px-6 py-3 text-lg">Create Note</Button>
+                                <Button onClick={handleCreateNote} className="px-6 py-3 text-lg">Create Note</Button>
                             </div>
                         )}
                     </Card>

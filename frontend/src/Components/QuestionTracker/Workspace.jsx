@@ -1,6 +1,4 @@
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { FaSearch } from "react-icons/fa";
+
 import WorkspaceTable from "./workspaceTable";
 
 const Workspace = () => {

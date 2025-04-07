@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "@/components/ui/table";
+import { TableBody } from "@/components/ui/table";
+import { TableCell } from "@/components/ui/table";
+import { TableHead } from "@/components/ui/table";
+import { TableHeader } from "@/components/ui/table";
+import { TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Sheet } from "@/components/ui/sheet";
+import { SheetContent } from "@/components/ui/sheet";
+import { SheetHeader } from "@/components/ui/sheet";
+import { SheetTitle } from "@/components/ui/sheet";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { CheckCircle, Clipboard, FileText } from "lucide-react";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Editor } from "@tinymce/tinymce-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -27,37 +35,35 @@ export default function WorkspaceTable() {
   useEffect(() => {
     const fetchSolvedQuestions = async () => {
       try {
-        const response = await axios.post("http://localhost:4000/api/sheets/solvedbyuser");
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/sheets/solved`);
         if (response.data.success) {
           setQuestions(response.data.data);
         }
       } catch (error) {
-        console.error("Error fetching solved questions:", error);
+        toast.error("Failed to fetch solved questions.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (userId) {
-      fetchSolvedQuestions();
-    }
+    if (userId) fetchSolvedQuestions();
   }, [userId]);
 
-  const fetchNoteForQuestion = async (questionId) => {
+  const fetchNoteForQuestion = async (noteId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/notes/${questionId}`);
-
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/notes/${noteId}`);
       if (response.data.success) {
-        setExistingNote(response.data.note);
-        setNoteName(response.data.note.question_id.title || "Untitled");
-        setNoteContent(response.data.note.content || "");
+        const note = response.data.note;
+        setExistingNote(note);
+        setNoteName(note.question.title );
+        setNoteContent(note.content );
       } else {
         setExistingNote(null);
         setNoteName("");
         setNoteContent("");
       }
     } catch (error) {
-      console.error("Error fetching note:", error);
+      toast.error("Error fetching note.");
       setExistingNote(null);
       setNoteName("");
       setNoteContent("");
@@ -69,23 +75,23 @@ export default function WorkspaceTable() {
 
     try {
       const response = existingNote
-        ? await axios.put(`http://localhost:4000/api/notes/update-note/${selectedQuestion.note}`, {
+        ? await axios.put(`${import.meta.env.VITE_API_URL}/api/notes/update`, {
+            noteId:selectedQuestion.note,
             content: noteContent,
-            name: noteName,
           })
-        : await axios.post("http://localhost:4000/api/notes/createquestionnote", {
+        : await axios.post(`${import.meta.env.VITE_API_URL}/api/notes/create`, {
+            type: "question",
             question_id: selectedQuestion.questionId,
             content: noteContent,
           });
 
       if (response.data.success) {
         setExistingNote(response.data.note);
-        toast.success(existingNote ? "Note saved successfully!" : "Note created successfully!");
+        toast.success(existingNote ? "Note updated successfully!" : "Note created successfully!");
         setSelectedQuestion(null);
       }
     } catch (error) {
-      console.error("Error saving note:", error);
-      toast.error("Failed to save note. Please try again.");
+      toast.error("Failed to save note.");
     }
   };
 
@@ -111,20 +117,19 @@ export default function WorkspaceTable() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
-  <label htmlFor="difficultyFilter" className="text-sm font-medium">Filter by Difficulty:</label>
-  <select
-    id="difficultyFilter"
-    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    value={difficultyFilter}
-    onChange={(e) => setDifficultyFilter(e.target.value)}
-  >
-    <option value="">All</option>
-    <option value="Easy">Easy</option>
-    <option value="Medium">Medium</option>
-    <option value="Hard">Hard</option>
-  </select>
-</div>
-
+          <label htmlFor="difficultyFilter" className="text-sm font-medium">Filter by Difficulty:</label>
+          <select
+            id="difficultyFilter"
+            className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={difficultyFilter}
+            onChange={(e) => setDifficultyFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
       </div>
 
       <Table>
@@ -153,7 +158,11 @@ export default function WorkspaceTable() {
                     <img src="https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png" alt="LeetCode" className="w-6 h-6" />
                   )}
                 </TableCell>
-                <TableCell className={q.difficulty === "Hard" ? "text-red-500" : q.difficulty === "Medium" ? "text-yellow-500" : "text-green-500"}>
+                <TableCell className={
+                  q.difficulty === "Hard" ? "text-red-500" :
+                  q.difficulty === "Medium" ? "text-yellow-500" :
+                  "text-green-500"
+                }>
                   {q.difficulty}
                 </TableCell>
                 <TableCell className="flex justify-center gap-3">
@@ -202,7 +211,13 @@ export default function WorkspaceTable() {
                   <FileText className="w-5 h-5" />
                   Note Name:
                 </label>
-                <Input id="noteName" placeholder="Untitled" maxLength={80} value={noteName} onChange={(e) => setNoteName(e.target.value)} />
+                <Input
+                  id="noteName"
+                  placeholder="Untitled"
+                  maxLength={80}
+                  value={noteName}
+                  onChange={(e) => setNoteName(e.target.value)}
+                />
               </div>
             </div>
             <Editor
