@@ -1,6 +1,6 @@
 import axios from "axios";
 import { request, gql } from "graphql-request";
-import dotenv from "dotenv"; // Adjust path if needed
+import dotenv from "dotenv";
 import User from "../Model/User.js";
 import GitHubData from "../Model/GitHubData.js";
 
@@ -111,6 +111,9 @@ const getGitHubUserData = async (req, res) => {
       (week) => week.contributionDays
     );
 
+    // 📆 Active Days
+    const activeDays = heatmap.filter((day) => day.contributionCount > 0).length;
+
     let totalCommits = graphqlData.user.contributionsCollection.totalCommitContributions;
 
     graphqlData.user.repositories.nodes.forEach((repo) => {
@@ -129,6 +132,7 @@ const getGitHubUserData = async (req, res) => {
         issues: issuesData.data.total_count || 0,
       },
       totalContributions: totalCommits,
+      activeDays,
       heatmap,
     };
 

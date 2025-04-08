@@ -10,6 +10,7 @@ import GitHubStats from "./GitHubStats";
 function DevStats() {
     const [heatmapData, setHeatmapData] = useState([]);
     const [totalContributions, setTotalContributions] = useState(0);
+    const [activedays, setactivedays] = useState(0);
     const [languages, setLanguages] = useState([]);
     const [stats, setStats] = useState({});
     const [loading, setLoading] = useState(true); // Added loading state
@@ -24,7 +25,7 @@ function DevStats() {
                 setTotalContributions(data.totalContributions);
                 setLanguages(data.languages || []);
                 setStats(data.stats);
-
+                setactivedays(data.activeDays)
                 // Format heatmap data
                 const formattedData = data.heatmap?.map(entry => ({
                     date: entry.date,
@@ -52,7 +53,7 @@ function DevStats() {
                     {/* Total Contributions */}
                     <StatCard title="Total Contributions" value={totalContributions} />
                     {/* Total Active Days */}
-                    <StatCard title="Total Active Days" value={heatmapData.length} />
+                    <StatCard title="Total Active Days" value={activedays} />
                 </div>
 
                 {/* Contribution Heatmap */}
