@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ExternalLink, Clock, Calendar as CalendarIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Button } from '../ui/button';
 
 // Utility functions
 const getDaysInMonth = (date) => {
