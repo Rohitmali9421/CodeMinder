@@ -114,13 +114,8 @@ const getGitHubUserData = async (req, res) => {
     // 📆 Active Days
     const activeDays = heatmap.filter((day) => day.contributionCount > 0).length;
 
-    let totalCommits = graphqlData.user.contributionsCollection.totalCommitContributions;
-
-    graphqlData.user.repositories.nodes.forEach((repo) => {
-      if (!repo.isFork && repo.defaultBranchRef?.target?.history?.totalCount) {
-        totalCommits += repo.defaultBranchRef.target.history.totalCount;
-      }
-    });
+    // ✅ Fixed: Use only totalCommitContributions (avoid double-counting)
+    const totalCommits = graphqlData.user.contributionsCollection.totalCommitContributions;
 
     const githubData = {
       username,
