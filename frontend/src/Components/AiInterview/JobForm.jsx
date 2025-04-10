@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
+import { setAIquestions } from "../../Features/Auth/interviewSlice";
 
 
 export default function JobForm() {
