@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Search, FileText } from "lucide-react";
-import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card } from "../ui/card";
 import { Editor } from "@tinymce/tinymce-react";
@@ -8,6 +7,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
+import { FiTrash2 } from "react-icons/fi";
+import { Button } from "../ui/button";
 
 export default function Notes() {
     const [activeTab, setActiveTab] = useState("general");
@@ -91,8 +92,27 @@ export default function Notes() {
         setNoteName("");
         setSelectedNoteId(null);
         setQuestionId(null);
-        setNoteType(activeTab); // "general" or "questions"
+        setNoteType(activeTab);
         setIsEditorOpen(true);
+    };
+
+    const handleDeleteNote = async (noteId) => {
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/notes/${noteId}`);
+            toast.success("Note deleted successfully!");
+            fetchGeneralNotes();
+            fetchQuestionNotes();
+            if (selectedNoteId === noteId) {
+                setIsEditorOpen(false);
+                setSelectedNoteId(null);
+                setNoteContent("");
+                setNoteName("");
+                setQuestionId(null);
+            }
+        } catch (error) {
+            console.error("Error deleting note:", error);
+            toast.error("Failed to delete note.");
+        }
     };
 
     return (
@@ -117,8 +137,22 @@ export default function Notes() {
                                 {activeTab === "general" ? (
                                     generalNotes.length > 0 ? (
                                         generalNotes.map((note) => (
-                                            <div key={note.noteId} onClick={() => handleNoteClick(note)} className={`p-2 cursor-pointer rounded-md transition-all hover:bg-gray-200 ${selectedNoteId === note.noteId ? "bg-gray-300 font-semibold" : ""}`}>
-                                                {note.noteName}
+                                            <div
+                                                key={note.noteId}
+                                                className={`p-2 flex justify-between items-center cursor-pointer rounded-md transition-all hover:bg-gray-200 ${
+                                                    selectedNoteId === note.noteId ? "bg-gray-300 font-semibold" : ""
+                                                }`}
+                                            >
+                                                <div onClick={() => handleNoteClick(note)} className="flex-1">
+                                                    {note.noteName}
+                                                </div>
+                                                <FiTrash2
+                                                    className="text-red-500 hover:text-red-700 cursor-pointer ml-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteNote(note.noteId);
+                                                    }}
+                                                />
                                             </div>
                                         ))
                                     ) : (
@@ -127,8 +161,22 @@ export default function Notes() {
                                 ) : (
                                     questionNotes.length > 0 ? (
                                         questionNotes.map((note) => (
-                                            <div key={note.noteId} onClick={() => handleNoteClick(note)} className={`p-2 cursor-pointer rounded-md transition-all hover:bg-gray-200 ${selectedNoteId === note.noteId ? "bg-gray-300 font-semibold" : ""}`}>
-                                                {note.question.title}
+                                            <div
+                                                key={note.noteId}
+                                                className={`p-2 flex justify-between items-center cursor-pointer rounded-md transition-all hover:bg-gray-200 ${
+                                                    selectedNoteId === note.noteId ? "bg-gray-300 font-semibold" : ""
+                                                }`}
+                                            >
+                                                <div onClick={() => handleNoteClick(note)} className="flex-1">
+                                                    {note.question.title}
+                                                </div>
+                                                <FiTrash2
+                                                    className="text-red-500 hover:text-red-700 cursor-pointer ml-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteNote(note.noteId);
+                                                    }}
+                                                />
                                             </div>
                                         ))
                                     ) : (

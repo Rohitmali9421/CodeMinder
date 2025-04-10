@@ -1,42 +1,79 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion";
 import Webcam from "react-webcam";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { RiSpeakAiFill } from "react-icons/ri";
+import { io } from "socket.io-client";
+import { RiSpeakAiFill, RiQuestionLine } from "react-icons/ri";
+import { setSingleInterview } from "@/Features/Auth/interviewSlice";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  CartesianGrid
+} from "recharts";
+import SpeechRecognition, {
+  useSpeechRecognition
+} from "react-speech-recognition";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-
-const AIQuestionsPage = () => {
+const AIInterviewPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { interviewId } = useParams();
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [webcamOn, setWebcamOn] = useState(false);
-  const { transcript, resetTranscript, listening } = useSpeechRecognition();
+  const [userAnswer, setUserAnswer] = useState("");
+  const webcamRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [socketInstance, setSocketInstance] = useState(null);
 
+  const { transcript, resetTranscript, listening } = useSpeechRecognition();
   const interview = useSelector((state) => state.interview.singleInterview);
   const questions = interview?.questions || [];
-  const currentQuestion = questions[currentIndex];
+  const currentQuestion = questions[currentIndex] || { 
+    _id: '',
+    questionText: 'Loading question...',
+    category: 'General',
+    userAnswer: ''
+  };
 
-  const [userAnswer, setUserAnswer] = useState("");
+  const [metricsHistory, setMetricsHistory] = useState([]);
+  const [averageMetrics, setAverageMetrics] = useState({ 
+    confidence: 0, 
+    eyeContact: 0 
+  });
+  const [totalFaces, setTotalFaces] = useState(0);
+  const [warnings, setWarnings] = useState([]);
 
+  // Fetch interview data
   useEffect(() => {
     const fetchInterview = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/get/${interviewId}`);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/aiinterview/get/${interviewId}`
+        );
         dispatch(setSingleInterview(response.data));
         setLoading(false);
       } catch (error) {
         console.error("Error fetching interview:", error);
+        setLoading(false);
       }
     };
     fetchInterview();
   }, [dispatch, interviewId]);
 
+  // Load saved answer when question changes
   useEffect(() => {
     if (currentQuestion?.userAnswer) {
       setUserAnswer(currentQuestion.userAnswer);
@@ -45,208 +82,487 @@ const AIQuestionsPage = () => {
     }
   }, [currentIndex, currentQuestion]);
 
-    // ✅ Function to Convert Text to Speech
-    const speakText = (text) => {
-      if (!text) return;
-      const synth = window.speechSynthesis; // Access browser's text-to-speech engine
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1; // Set speech speed (1 is normal, 0.8 is slower)
-      utterance.pitch = 1; // Set pitch (1 is normal)
-      synth.cancel(); // Stop previous speech if still playing
-      synth.speak(utterance); // Speak the new question
-    };
-  
-    // ✅ Speak the Question when the question changes
-    useEffect(() => {
-      if (currentQuestion?.questionText) {
-        setTimeout(()=>{
-          speakText(currentQuestion.questionText);
-        },1000)
-      }
-    }, [currentIndex, currentQuestion]);
-  
+  // Text-to-speech for questions
+  const speakText = (text) => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    synth.cancel();
+    synth.speak(utterance);
+  };
 
+  useEffect(() => {
+    if (currentQuestion?.questionText) {
+      setTimeout(() => speakText(currentQuestion.questionText), 1000);
+    }
+  }, [currentIndex, currentQuestion]);
 
+  // Save answer to backend
   const handleSaveAnswer = async () => {
-    if (!userAnswer.trim())
-      {  
-        speakText("Please first give answer then submit this answer ok ");
-          return alert("Please provide an answer!");
-      }
-
+    if (!userAnswer.trim()) {
+      speakText("Please provide an answer before submitting");
+      return;
+    }
 
     setSaving(true);
-    try {  
+    try {
       const response = await axios.post(
-        
-        `${import.meta.env.VITE_API_URL}/api/v1/AiInterview/${interviewId}/submitAns`,
+        `${import.meta.env.VITE_API_URL}/api/aiinterview/${interviewId}/submitAns`,
         {
           questionId: currentQuestion._id,
           userAnswer,
         }
-        
       );
-     
       alert(response.data.message);
     } catch (error) {
-      console.error("Error saving answer:", error.response.data.message);
+      console.error("Error saving answer:", error);
+      alert("Failed to save answer. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
+  // Speech recognition handlers
   const handleStartRecording = () => {
-    SpeechRecognition.startListening({ continuous: true, language: "en-IN" });
+    SpeechRecognition.startListening({ 
+      continuous: true, 
+      language: "en-IN",
+      interimResults: true
+    });
   };
-  
+
   const handleStopRecording = () => {
     SpeechRecognition.stopListening();
-  
-    if (!transcript.trim()) {
-      alert("Please speak your answer!");
-      return;
+    if (transcript.trim()) {
+      setUserAnswer(transcript);
     }
-  
-    setUserAnswer(transcript);
-  
-    // Save the answer after ensuring it's not empty
-    setTimeout(() => {
-      try {
-        handleSaveAnswer();
-      } catch (error) {
-        console.error("Error saving answer:", error);
-        alert("Failed to save your answer. Please try again!");
-      }
-    }, 100); // Small delay to ensure state updates
-  
     resetTranscript();
   };
 
-  function speakSomething(text){
-    speakText(text);
+  const navigateToScore = () => {
+    speakText("Interview completed. Now showing your results.");
+    navigate(`/AI-Interivew/${interviewId}/score`);
   };
 
-  function ScorePage(){
-    speakText("Now you can seen your Score how much you score and your performance")
-    navigate(`/AI-Interivew/${interviewId}/score`)
+  // Draw bounding boxes on canvas
+  const drawBoundingBoxes = (faces) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!ctx || !canvas) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    faces.forEach((face) => {
+      ctx.beginPath();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = face.eye_contact ? "rgba(74, 222, 128, 0.8)" : "rgba(239, 68, 68, 0.8)";
+      ctx.rect(face.x, face.y, face.width, face.height);
+      ctx.stroke();
+      
+      // Add confidence label
+      ctx.fillStyle = face.eye_contact ? "rgba(74, 222, 128, 0.8)" : "rgba(239, 68, 68, 0.8)";
+      ctx.font = "bold 14px Arial";
+      ctx.fillText(
+        `${(face.confidence * 100).toFixed(1)}% ${face.eye_contact ? "👀" : "👁️"}`,
+        face.x,
+        face.y > 20 ? face.y - 5 : 15
+      );
+    });
+  };
+
+  // Setup socket connection and auto-start monitoring
+  useEffect(() => {
+    const socket = io("http://localhost:5000", { 
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+    setSocketInstance(socket);
+
+    socket.on("connect", () => {
+      console.log("✅ Connected to socket");
+      // Auto-start monitoring when connected
+      startMonitoring(socket);
+    });
+
+    socket.on("disconnect", () => console.log("❌ Disconnected from socket"));
+
+    socket.on("face_data", (data) => {
+      const { faces, total_faces, warnings } = data;
+      console.log(data)
+      setTotalFaces(total_faces);
+      setWarnings(warnings || []);
+      drawBoundingBoxes(faces);
+      // Calculate metrics
+      const confidences = faces.map((f) => f.confidence * 100);
+      const eyeContacts = faces.map((f) => f.eye_contact_percentage );
+
+      const avgConfidence = confidences.length
+        ? confidences.reduce((a, b) => a + b) / confidences.length
+        : 0;
+      const avgEyeContact = eyeContacts.length
+        ? eyeContacts.reduce((a, b) => a + b) / eyeContacts.length
+        : 0;
+
+      setAverageMetrics({
+        confidence: avgConfidence,
+        eyeContact: avgEyeContact
+      });
+
+      // Update metrics history
+      const timestamp = new Date().toLocaleTimeString();
+      setMetricsHistory(prev => [
+        ...prev.slice(-14),
+        {
+          timestamp,
+          confidence: avgConfidence,
+          eyeContact: avgEyeContact
+        }
+      ]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  // Start monitoring function
+  const startMonitoring = (socket) => {
+    const interval = setInterval(() => {
+      const webcam = webcamRef.current;
+      const canvas = canvasRef.current;
+
+      if (webcam && webcam.video && canvas) {
+        canvas.width = webcam.video.videoWidth;
+        canvas.height = webcam.video.videoHeight;
+
+        const imageSrc = webcam.getScreenshot();
+        if (imageSrc) {
+          socket.emit("video_frame", { image: imageSrc });
+        }
+      }
+    }, 1000); // Send frame every second
+
+    return () => clearInterval(interval);
+  };
+
+  if (loading || !interview) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
+
   return (
-    <motion.div 
-      className="max-w-5xl mx-auto mt-10 p-6 bg-gray-900 text-white shadow-lg rounded-lg"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {loading ? (
-        <p className="text-center text-xl">Loading Questions...</p>
-      ) : (
-        <>
-          <h1 className="text-3xl font-bold text-center text-blue-500">
-            🎤 AI Interview Questions
-          </h1>
+    <div className="max-w-7xl mx-auto mt-20 p-4 md:p-6 bg-gray-50 min-h-screen">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            {/* Left Side - Question & Input */}
-            <motion.div 
-              className="p-6 bg-gray-800 rounded-lg space-y-4"
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-xl font-bold border-b pb-2">❓ Question {currentIndex + 1} / {questions.length}</h2>
-              <p className="text-gray-300">{currentQuestion?.questionText || "No question available"}</p>
-
-              <RiSpeakAiFill
-              className="text-2xl cursor-pointer"
-               onClick={()=>{speakSomething(currentQuestion?.questionText)}}
-              />
-              <textarea
-                className="w-full p-3 bg-gray-700 text-white rounded-lg"
-                rows="4"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-              ></textarea>
-
-              <button
-                onClick={handleSaveAnswer}
-                className={`w-full py-3 text-lg font-bold rounded-lg shadow-md ${
-                  saving ? "bg-gray-500 cursor-not-allowed" : "bg-green-600 hover:bg-green-500"
-                }`}
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "💾 Save Answer"}
-              </button>
-
-              <div className="flex justify-between">
-                <button
-                  onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-                  className="px-5 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg"
-                  disabled={currentIndex === 0}
-                >
-                  ⬅ Previous
-                </button>
-
-                {currentIndex < questions.length - 1 ? (
-                  <button
-                    onClick={() => setCurrentIndex((prev) => prev + 1)}
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg"
-                  >
-                    Next ➡
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {ScorePage()}}
-                    className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg"
-                  >
-                    ✅ Submit Interview
-                  </button>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Right Side - Webcam & Recording */}
-            <motion.div 
-              className="p-6 bg-gray-800 rounded-lg text-center space-y-4"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-xl font-bold border-b pb-2">📷 Webcam</h2>
-
-              {webcamOn ? <Webcam className="w-full h-[300px] bg-black rounded-lg" videoConstraints={{ facingMode: "user" }} /> : 
-                <div className="w-full h-[300px] bg-gray-700 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-400">Webcam Off</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Question Panel */}
+        <Card className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <RiQuestionLine className="text-blue-600 text-xl" />
                 </div>
-              }
-
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setWebcamOn(true)}
-                  className="px-5 py-2 bg-green-600 text-white rounded-lg"
-                >
-                  ▶️ Start Webcam
-                </button>
-                <button
-                  onClick={() => setWebcamOn(false)}
-                  className="px-5 py-2 bg-red-600 text-white rounded-lg"
-                >
-                  ⏹ Stop Webcam
-                </button>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Question {currentIndex + 1} of {questions.length}
+                </h2>
               </div>
+              <Badge variant="secondary" className="text-sm font-medium">
+                {currentQuestion?.category || "General"}
+              </Badge>
+            </div>
+          </CardHeader>
 
-              <button
-                onClick={listening ? handleStopRecording : handleStartRecording}
-                className="w-full py-3 text-lg font-bold rounded-lg shadow-md bg-blue-600 hover:bg-blue-500"
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <p className="text-gray-700 leading-relaxed">
+                {currentQuestion?.questionText || "Loading question..."}
+              </p>
+              <button 
+                onClick={() => speakText(currentQuestion?.questionText)}
+                className="mt-2 text-blue-600 hover:text-blue-800 flex items-center text-sm"
+                disabled={!currentQuestion?.questionText}
               >
-                🎙 {listening ? "Stop Recording" : "Start Recording"}
+                <RiSpeakAiFill className="mr-2" />
+                Hear Question Again
               </button>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </motion.div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Your Answer
+              </label>
+              <textarea
+                value={listening ? transcript : userAnswer}
+                onChange={(e) => !listening && setUserAnswer(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg min-h-[150px] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Type or speak your answer here..."
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={listening ? handleStopRecording : handleStartRecording}
+                variant={listening ? "destructive" : "default"}
+                className="flex-1 gap-2"
+              >
+                {listening ? (
+                  <>
+                    <span className="animate-pulse h-2 w-2 bg-white rounded-full"></span>
+                    Recording...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                    </svg>
+                    Record Answer
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => {
+                  if (listening) handleStopRecording();
+                  setUserAnswer("");
+                }}
+                variant="outline"
+                disabled={!userAnswer && !listening}
+                className="gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex justify-between gap-4 border-t pt-4">
+            <Button
+              onClick={() => setCurrentIndex(prev => Math.max(prev - 1, 0))}
+              disabled={currentIndex === 0}
+              variant="outline"
+              className="gap-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Previous
+            </Button>
+
+            <Button
+              onClick={handleSaveAnswer}
+              disabled={!userAnswer.trim()}
+              className="bg-green-600 hover:bg-green-700 gap-1"
+            >
+              {saving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Save Answer
+                </>
+              )}
+            </Button>
+
+            {currentIndex < questions.length - 1 ? (
+              <Button
+                onClick={() => setCurrentIndex(prev => prev + 1)}
+                disabled={currentIndex >= questions.length - 1}
+                className="gap-1"
+              >
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </Button>
+            ) : (
+              <Button
+                onClick={navigateToScore}
+                className="bg-purple-600 hover:bg-purple-700 gap-1"
+              >
+                Finish
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+
+        {/* Monitoring Panel */}
+        <Card className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="bg-green-100 p-2 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Performance Monitoring
+                </h2>
+              </div>
+              <Badge className="bg-green-100 text-green-800">
+                <span className="relative flex h-2 w-2 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                Active
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-black">
+              <Webcam
+                ref={webcamRef}
+                audio={false}
+                screenshotFormat="image/jpeg"
+                className="w-full h-full object-cover"
+                videoConstraints={{ facingMode: "user" }}
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+              />
+            </div>
+
+            {/* Metrics Overview */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <h3 className="text-xs font-medium text-gray-500">Faces</h3>
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {totalFaces}
+                </p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="text-xs font-medium text-gray-500">Confidence</h3>
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {averageMetrics.confidence.toFixed(1)}%
+                </p>
+                <Progress 
+                  value={averageMetrics.confidence} 
+                  className="h-1.5 mt-2 bg-gray-200" 
+                  indicatorColor="bg-blue-500"
+                />
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <h3 className="text-xs font-medium text-gray-500">Eye Contact</h3>
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {averageMetrics.eyeContact.toFixed(1)}%
+                </p>
+                <Progress 
+                  value={averageMetrics.eyeContact} 
+                  className="h-1.5 mt-2 bg-gray-200" 
+                  indicatorColor="bg-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Warnings */}
+            {warnings.length > 0 && (
+              <Alert variant="destructive" className="border-red-200 bg-red-50">
+                <AlertDescription className="text-red-600 text-sm">
+                  {warnings.map((warning, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span>{warning}</span>
+                    </div>
+                  ))}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Metrics Charts */}
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={metricsHistory} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tick={{ fontSize: 10 }}
+                    tickMargin={5}
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tick={{ fontSize: 10 }}
+                    tickMargin={5}
+                    tickFormatter={(value) => `${value}%`}
+                    width={25}
+                  />
+                  <Tooltip 
+                    formatter={(value) => [`${value}%`]}
+                    labelFormatter={(label) => `Time: ${label}`}
+                    contentStyle={{
+                      fontSize: '12px',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Legend 
+                    iconSize={10} 
+                    wrapperStyle={{ 
+                      fontSize: '12px',
+                      paddingTop: '5px'
+                    }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="confidence" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ r: 2 }}
+                    activeDot={{ r: 4 }}
+                    name="Confidence"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="eyeContact" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2}
+                    dot={{ r: 2 }}
+                    activeDot={{ r: 4 }}
+                    name="Eye Contact"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 
-export default AIQuestionsPage;
+export default AIInterviewPage;

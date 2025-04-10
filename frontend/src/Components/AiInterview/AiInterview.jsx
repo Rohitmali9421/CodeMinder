@@ -1,28 +1,23 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-
 import { motion } from "framer-motion";
-import Webcam from "react-webcam";
-
+import { setSingleInterview } from "@/Features/Auth/interviewSlice";
 
 const AiInterview = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { interviewId } = useParams();
-  const [webcamOn, setWebcamOn] = useState(false); // State to control webcam
-
   const singleInterview = useSelector((state) => state.interview.singleInterview);
- 
 
   useEffect(() => {
     const fetchInterviewData = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/get`);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/aiinterview/get/${interviewId}`
+        );
         dispatch(setSingleInterview(response.data));
-        
-        
       } catch (error) {
         console.log(error);
       }
@@ -32,112 +27,182 @@ const AiInterview = () => {
 
   return (
     <motion.div 
-      className="max-w-5xl mx-auto pt-20 p-6 bg-gray-900 text-white shadow-lg rounded-lg"
+      className="max-w-4xl mx-auto mt-20  p-6 min-h-screen bg-gray-50"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-3xl font-bold text-center text-blue-500">
-        🎤 AI Interview Details
-      </h1>
+      {/* Header Section */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-bold text-gray-800 mb-3">
+          AI Interview Details
+        </h1>
+        <p className="text-lg text-gray-600">
+          Review your interview information before starting
+        </p>
+      </div>
 
-      {/* 🔹 Main Layout - Job Details on Left, Webcam on Right */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-
-        {/* 🔹 Job Details Section (Left Side) */}
-        <motion.div 
-          className="p-6 bg-gray-800 rounded-lg space-y-4"
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-xl font-bold border-b pb-2">📌 Job Information</h2>
-
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">💼 Job Role:</h3>
-            <p className="text-gray-300">{singleInterview?.jobRole || "Loading..."}</p>
-          </div>
-
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">📄 Job Description:</h3>
-            <p className="text-gray-300">{singleInterview?.jobDescription || "Loading..."}</p>
-          </div>
-
-          <div className="flex justify-between bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">🎯 Experience Level:</h3>
-            <span className="text-gray-300">{singleInterview?.experienceLevel || "Loading..."} Years</span>
-          </div>
-
-          <div className="flex justify-between bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">📅 Created At:</h3>
-            <span className="text-gray-300">
-              {singleInterview?.createdAt ? new Date(singleInterview.createdAt).toLocaleDateString() : "Loading..."}
-            </span>
-          </div>
-
-          <div className="flex justify-between bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">⭐ Final Score:</h3>
-            <span className="text-gray-300">{singleInterview?.finalScore || "Not Available Yet"}</span>
-          </div>
-
-          <div className="flex justify-between bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold">❓ Total Questions:</h3>
-            <span className="text-gray-300">{singleInterview?.questions?.length || "Loading..."}</span>
-          </div>
-
-          {/* 🔹 Start AI Interview Button */}
-          <motion.button
-            onClick={() => navigate(`/AI-Interivew/${interviewId}/start`)}
-            className="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white py-3 text-lg font-bold rounded-lg shadow-md"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            🎤 Start AI Interview
-          </motion.button>
-        </motion.div>
-
-        {/* 🔹 Webcam Section (Right Side) */}
-        <motion.div 
-          className="p-6 bg-gray-800 rounded-lg text-center space-y-4"
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-xl font-bold border-b pb-2">📷 Webcam</h2>
-
-          <div className="flex flex-col items-center">
-            {webcamOn ? (
-              <Webcam className="w-full h-[300px] bg-black rounded-lg" videoConstraints={{ facingMode: "user" }} />
-            ) : (
-              <div className="w-full h-[300px] bg-gray-700 rounded-lg flex items-center justify-center">
-                <p className="text-gray-400">Webcam Off</p>
-              </div>
-            )}
-
-            {/* 🔹 Webcam Control Buttons */}
-            <div className="mt-4 flex space-x-4">
-              <motion.button
-                onClick={() => setWebcamOn(true)}
-                className="px-5 py-2 bg-green-600 text-white rounded-lg shadow-md"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                ▶️ Start Webcam
-              </motion.button>
-
-              <motion.button
-                onClick={() => setWebcamOn(false)}
-                className="px-5 py-2 bg-red-600 text-white rounded-lg shadow-md"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                ⏹ Stop Webcam
-              </motion.button>
+      {/* Main Card */}
+      <motion.div 
+        className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        {/* Card Header */}
+        <div className="bg-blue-600 p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+            <div className="mb-4 sm:mb-0">
+              <h2 className="text-2xl font-bold text-white">
+                {singleInterview?.jobRole || "Interview Position"}
+              </h2>
+              <p className="text-blue-100">
+                {singleInterview?.experienceLevel || "0"} years experience required
+              </p>
+            </div>
+            <div className="bg-white/20 px-4 py-2 rounded-full">
+              <span className="text-white font-medium">
+                {singleInterview?.questions?.length || "0"} Questions
+              </span>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-      </div>
+        {/* Card Content */}
+        <div className="p-6">
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Left Column */}
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">Scheduled Date</h3>
+                </div>
+                <p className="text-gray-700 ml-11">
+                  {singleInterview?.createdAt ? 
+                    new Date(singleInterview.createdAt).toLocaleDateString('en-US', {
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric'
+                    }) 
+                    : "Not specified"
+                  }
+                </p>
+              </div>
+
+              <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">Estimated Duration</h3>
+                </div>
+                <p className="text-gray-700 ml-11">
+                  {singleInterview?.questions?.length ? 
+                    `${Math.ceil(singleInterview.questions.length * 2.5)} minutes` 
+                    : "Not specified"
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">Current Status</h3>
+                </div>
+                <div className="ml-11">
+                  {singleInterview?.finalScore ? 
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      Completed ({singleInterview.finalScore}%)
+                    </span> 
+                    : 
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                      Not Started
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">Difficulty</h3>
+                </div>
+                <div className="ml-11">
+                  {singleInterview?.experienceLevel >= 5 ? 
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Advanced</span> :
+                    singleInterview?.experienceLevel >= 3 ? 
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">Intermediate</span> :
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Beginner</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Job Description */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Job Description
+            </h3>
+            <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+              <p className="text-gray-700 whitespace-pre-line">
+                {singleInterview?.jobDescription || "No job description provided."}
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
+            <motion.button
+              onClick={() => navigate(`/AI-Interivew/${interviewId}/start`)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 shadow-md"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={singleInterview?.finalScore}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+              </svg>
+              {singleInterview?.finalScore ? "Interview Completed" : "Begin Interview"}
+            </motion.button>
+            
+            <motion.button
+              onClick={() => navigate(-1)}
+              className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 py-3 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 shadow-sm"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Go Back
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 };

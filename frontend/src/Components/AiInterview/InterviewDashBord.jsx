@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function InterviewDashBord() {
     const dispatch = useDispatch();
@@ -16,7 +15,7 @@ export default function InterviewDashBord() {
     useEffect(() => {
         const fetchAllInterview = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/AiInterview/getUserInterviews`, {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/aiinterview/getUserInterviews`, {
                 });
 
                 console.log("curr user : ", response);

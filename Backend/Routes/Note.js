@@ -3,6 +3,7 @@ import {
   createNote,
   getUserNotes,
   getUserQuestionNotes,
+  handleDeleteNote,
   handleGetNoteById,
   handleUpdateNotes,
 } from "../Controller/NotesController.js";
@@ -25,4 +26,6 @@ router.get("/question", authenticateToken, getUserQuestionNotes);
 // Get a note by its ID (general or question)
 router.get("/:noteId", authenticateToken, handleGetNoteById);
 
+//delete a note by its ID
+router.delete("/:noteId", authenticateToken, handleDeleteNote);
 export default router;

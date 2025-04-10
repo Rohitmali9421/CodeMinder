@@ -205,10 +205,56 @@ const formatNoteResponse = (note) => ({
     : {}),
 });
 
+// Delete a note
+const handleDeleteNote = async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(noteId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid note ID format",
+      });
+    }
+
+    const note = await Note.findById(noteId);
+
+    if (!note) {
+      return res.status(404).json({
+        success: false,
+        message: "Note not found",
+      });
+    }
+
+    if (note.user.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    await Note.findByIdAndDelete(noteId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Note deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+
 export {
   createNote,
   handleUpdateNotes,
   handleGetNoteById,
   getUserNotes,
   getUserQuestionNotes,
+  handleDeleteNote,
 };
