@@ -5,7 +5,7 @@ import axios from "axios";
 import Webcam from "react-webcam";
 import { io } from "socket.io-client";
 import { RiSpeakAiFill, RiQuestionLine } from "react-icons/ri";
-import { setSingleInterview } from "@/Features/Auth/interviewSlice";
+import { setSingleInterview } from "../../Features/Auth/interviewSlice";
 import {
   LineChart,
   Line,
@@ -19,11 +19,11 @@ import {
 import SpeechRecognition, {
   useSpeechRecognition
 } from "react-speech-recognition";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "../ui/progress";
+import { Button } from "../ui/button";
+import { Card, CardHeader, CardContent, CardFooter } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
 
 const AIInterviewPage = () => {
   const dispatch = useDispatch();

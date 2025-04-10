@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { setSingleInterview } from "@/Features/Auth/interviewSlice";
+import { setSingleInterview } from "../../Features/Auth/interviewSlice";
 
 const AiInterview = () => {
   const dispatch = useDispatch();
