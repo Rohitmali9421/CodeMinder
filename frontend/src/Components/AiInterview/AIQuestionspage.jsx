@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -37,6 +37,9 @@ const AIInterviewPage = () => {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const [socketInstance, setSocketInstance] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [warningCount, setWarningCount] = useState(0);
+  const [showWarningModal, setShowWarningModal] = useState(false);
 
   const { transcript, resetTranscript, listening } = useSpeechRecognition();
   const interview = useSelector((state) => state.interview.singleInterview);
@@ -55,6 +58,90 @@ const AIInterviewPage = () => {
   });
   const [totalFaces, setTotalFaces] = useState(0);
   const [warnings, setWarnings] = useState([]);
+
+  // Fullscreen handling
+  const enterFullscreen = useCallback(() => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().then(() => setIsFullscreen(true));
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen().then(() => setIsFullscreen(true));
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen().then(() => setIsFullscreen(true));
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(() => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().then(() => setIsFullscreen(false));
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen().then(() => setIsFullscreen(false));
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen().then(() => setIsFullscreen(false));
+    }
+  }, []);
+
+  // Check fullscreen state
+  const checkFullscreen = useCallback(() => {
+    setIsFullscreen(
+      document.fullscreenElement || 
+      document.webkitFullscreenElement || 
+      document.msFullscreenElement
+    );
+  }, []);
+
+  // Tab switching detection
+  const handleVisibilityChange = useCallback(() => {
+    if (document.hidden) {
+      setWarningCount(prev => prev + 1);
+      if (warningCount >= 2) {
+        setShowWarningModal(true);
+        speakText("Warning! Multiple tab switches detected. This may result in interview termination.");
+      } else {
+        speakText(`Warning! Please don't switch tabs. Warning ${warningCount + 1} of 3.`);
+      }
+    }
+  }, [warningCount]);
+
+  // Initialize fullscreen and event listeners
+  useEffect(() => {
+    enterFullscreen();
+    
+    document.addEventListener('fullscreenchange', checkFullscreen);
+    document.addEventListener('webkitfullscreenchange', checkFullscreen);
+    document.addEventListener('msfullscreenchange', checkFullscreen);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Block context menu
+    const handleContextMenu = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', handleContextMenu);
+    
+    // Block keyboard shortcuts
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+      // Allow only specific keys
+      const allowedKeys = [
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Backspace', 'Delete', 'Enter', 'Tab', 'Escape'
+      ];
+      if (e.altKey && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      exitFullscreen();
+      document.removeEventListener('fullscreenchange', checkFullscreen);
+      document.removeEventListener('webkitfullscreenchange', checkFullscreen);
+      document.removeEventListener('msfullscreenchange', checkFullscreen);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [enterFullscreen, exitFullscreen, checkFullscreen, handleVisibilityChange]);
 
   // Fetch interview data
   useEffect(() => {
@@ -256,6 +343,59 @@ const AIInterviewPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto mt-20 p-4 md:p-6 bg-gray-50 min-h-screen">
+      {/* Warning Modal */}
+      {showWarningModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-red-600">Warning!</h2>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="text-gray-700 mb-4">
+              You have switched tabs multiple times during the interview. 
+              Continued violations may result in termination of your interview session.
+            </p>
+            <div className="flex justify-end">
+              <Button 
+                onClick={() => {
+                  setShowWarningModal(false);
+                  setWarningCount(0);
+                }}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                I Understand
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Warning */}
+      {!isFullscreen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-blue-600">Fullscreen Required</h2>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </div>
+            <p className="text-gray-700 mb-4">
+              The interview must be conducted in fullscreen mode. Please click the button below to continue.
+            </p>
+            <div className="flex justify-end">
+              <Button 
+                onClick={enterFullscreen}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Enter Fullscreen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Question Panel */}
@@ -333,7 +473,7 @@ const AIInterviewPage = () => {
                 className="gap-1"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Clear
               </Button>
