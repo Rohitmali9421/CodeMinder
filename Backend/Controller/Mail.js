@@ -21,7 +21,7 @@ const sendEmail = async (email, contest) => {
     }
 
     const mailOptions = {
-        from: "emmergecy@gmail.com",
+        from: `"Code Minder" <emmergecy@gmail.com>`,
         to: email,
         subject: `Reminder: ${contest.contestName} is happening tomorrow!`,
         text: `Hello,\n\nDon't forget about the upcoming contest!\n\n📅 Contest Name: ${contest.contestName}\n⏰ Starts At: ${new Date(contest.contestStartDate).toLocaleString()}\n🔗 Link: ${contest.contestUrl}\n\nGood Luck!`

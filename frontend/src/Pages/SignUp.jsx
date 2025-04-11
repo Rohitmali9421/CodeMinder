@@ -20,7 +20,7 @@ const SignUp = () => {
     } = useForm();
     useEffect(() => {
         if (user) {
-            navigate("/"); // Change "/dashboard" to the desired route
+            navigate("/profile/edit"); // Change "/dashboard" to the desired route
         }
     }, [user, navigate]);
     const onSubmit = (data) => {
