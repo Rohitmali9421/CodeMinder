@@ -5,22 +5,18 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-
+import { toast } from "react-toastify"; // 🔥
+import { FiTrash2 } from "react-icons/fi"; // 🔥
+import { Button } from "../ui/button"; // 🔥
 
 export default function InterviewDashBord() {
     const dispatch = useDispatch();
     const userInterviewList = useSelector((state) => state.interview.userInterviews);
 
-
     useEffect(() => {
         const fetchAllInterview = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/aiinterview/getUserInterviews`, {
-                });
-
-                console.log("curr user : ", response);
-
-
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/aiinterview/getUserInterviews`);
                 dispatch(setUserInterviews(response.data));
             } catch (error) {
                 console.log(error);
@@ -29,9 +25,20 @@ export default function InterviewDashBord() {
         fetchAllInterview();
     }, [dispatch]);
 
+    // 🔥 Delete Interview Function
+    const handleDeleteInterview = async (interviewId) => {
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/aiinterview/interview/${interviewId}`);
+            dispatch(setUserInterviews(userInterviewList.filter(i => i._id !== interviewId)));
+            toast.success("Interview deleted successfully!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to delete interview.");
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 p-6">
-            {/* Header Section */}
             <motion.h1
                 className="text-3xl font-bold text-center text-gray-800 mb-6"
                 initial={{ opacity: 0, y: -20 }}
@@ -41,7 +48,6 @@ export default function InterviewDashBord() {
                 📋 Interview Dashboard
             </motion.h1>
 
-            {/* Start Interview Button */}
             <div className="flex justify-center mb-8">
                 <Link to="/AIJobForm">
                     <motion.button
@@ -54,7 +60,6 @@ export default function InterviewDashBord() {
                 </Link>
             </div>
 
-            {/* Interview List Section */}
             <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-6">
                 <h2 className="text-2xl font-semibold text-gray-700 mb-4">📝 Interview List</h2>
 
@@ -65,9 +70,18 @@ export default function InterviewDashBord() {
                         {userInterviewList.map((interview) => (
                             <motion.div
                                 key={interview._id}
-                                whileHover={{ scale: 1.05 }}
-                                className="bg-white p-5 rounded-xl shadow-md border border-gray-300 flex flex-col items-center"
+                                whileHover={{ scale: 1.03 }}
+                                className="relative bg-white p-5 rounded-xl shadow-md border border-gray-300 flex flex-col items-center"
                             >
+                                {/* 🔥 Delete Icon Button */}
+                                <Button
+                                    variant="ghost"
+                                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                                    onClick={() => handleDeleteInterview(interview._id)}
+                                >
+                                    <FiTrash2 size={20} />
+                                </Button>
+
                                 <h3 className="text-lg font-semibold text-gray-800">{interview?.jobRole}</h3>
                                 <p className="text-sm text-gray-600">📅 Date: {interview?.updatedAt.toString().split("T")[0]}</p>
                                 <div className="mt-4 flex gap-3">
