@@ -6,6 +6,8 @@ const InterviewSchema = new mongoose.Schema({
     jobRole: { type: String, required: true },
     jobDescription: { type: String, required: true },
     experienceLevel: { type: String, required: true },
+    eyecontact: { type: Number ,default: 0},
+    confidence: { type: Number ,default: 0},
     questions: [
       {
         questionText: { type: String},
