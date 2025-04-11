@@ -4,6 +4,7 @@ import LeetCodeData from "../Model/LeetCodeData.js";
 import CodeforcesData from "../Model/CodeforcesData.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import Resume from "../Model/Resume.js";
 
 dotenv.config();
 
@@ -11,6 +12,10 @@ const generateAIResponse = async (req, res) => {
   try {
     const userId = req.user.id;
     const { question } = req.body;
+
+    const resumedata = await Resume.findOne({ userId });
+
+
 
     if (!question) {
       return res.status(400).json({ message: "Question is required." });
@@ -37,7 +42,7 @@ const generateAIResponse = async (req, res) => {
       codeforces: codeforcesDataEntry?.data || null,
     };
 
-    const aiResponse = await generateGeminiResponse(combinedData, question, user.name);
+    const aiResponse = await generateGeminiResponse(combinedData,resumedata, question, user.name);
     return res.status(200).json({ aiResponse });
   } catch (error) {
     console.error("❌ Error generating AI response:", error);
@@ -45,7 +50,7 @@ const generateAIResponse = async (req, res) => {
   }
 };
 
-const generateGeminiResponse = async (data, question, username) => {
+const generateGeminiResponse = async (data,resumedata, question, username) => {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -54,13 +59,16 @@ You are an AI assistant analyzing a user's coding profile.
 User's name: ${username}
 
 Here is the user's stored coding data (do not mention it explicitly):
-${JSON.stringify(data)}
+${JSON.stringify(data)}and
+Here is the user's resume  data (do not mention it explicitly):
+${JSON.stringify(resumedata)}
 
 Answer this question in a maximum of 5 lines: "${question}"
 
 Instructions:
 - Address the user by name.
 - Do NOT say "Based on the data".
+- Do NOT say "according to your resume or other like this".
 - If the question is unrelated, still give a relevant or general answer.
 `;
 
