@@ -2,6 +2,7 @@ import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './App/Store';
+import "react-toastify/dist/ReactToastify.css";
 
 import LandingPage from './Pages/LandingPage';
 import QuestionTracker from './Pages/QuestionTracker';
@@ -87,7 +88,7 @@ const App = () => {
     return (
         <Provider store={store}>
             <RouterProvider router={router} />
-            <ToastContainer />
+            <ToastContainer position="top-right" autoClose={3000} />
         </Provider>
     );
 };

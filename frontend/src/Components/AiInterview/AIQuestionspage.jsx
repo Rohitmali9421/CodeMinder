@@ -24,6 +24,8 @@ import { Button } from "../ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription } from "../ui/alert";
+import { toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 const AIInterviewPage = () => {
     const dispatch = useDispatch();
@@ -100,8 +102,20 @@ const AIInterviewPage = () => {
             if (warningCount >= 2) {
                 setShowWarningModal(true);
                 speakText("Warning! Multiple tab switches detected. This may result in interview termination.");
+                toast.warn("Multiple tab switches detected!", {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
             } else {
                 speakText(`Warning! Please don't switch tabs. Warning ${warningCount + 1} of 3.`);
+                toast.warn(`Please don't switch tabs. Warning ${warningCount + 1} of 3`, {
+                    position: "top-center",
+                    autoClose: 3000,
+                });
             }
         }
     }, [warningCount]);
@@ -155,9 +169,17 @@ const AIInterviewPage = () => {
                 );
                 dispatch(setSingleInterview(response.data));
                 setLoading(false);
+                toast.success("Interview loaded successfully", {
+                    position: "top-right",
+                    autoClose: 2000,
+                });
             } catch (error) {
                 console.error("Error fetching interview:", error);
                 setLoading(false);
+                toast.error("Failed to load interview", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
             }
         };
         fetchInterview();
@@ -192,6 +214,10 @@ const AIInterviewPage = () => {
     const handleSaveAnswer = async () => {
         if (!userAnswer.trim()) {
             speakText("Please provide an answer before submitting");
+            toast.warn("Please provide an answer before submitting", {
+                position: "top-right",
+                autoClose: 3000,
+            });
             return;
         }
 
@@ -204,10 +230,16 @@ const AIInterviewPage = () => {
                     userAnswer,
                 }
             );
-            alert(response.data.message);
+            toast.success(response.data.message || "Answer saved successfully!", {
+                position: "top-right",
+                autoClose: 3000,
+            });
         } catch (error) {
             console.error("Error saving answer:", error);
-            alert("Failed to save answer. Please try again.");
+            toast.error(error.response?.data?.message || "Failed to save answer. Please try again.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
         } finally {
             setSaving(false);
         }
@@ -220,18 +252,25 @@ const AIInterviewPage = () => {
             language: "en-IN",
             interimResults: true
         });
+        toast.info("Recording started", {
+            position: "top-right",
+            autoClose: 2000,
+        });
     };
 
     const handleStopRecording = () => {
         SpeechRecognition.stopListening();
         if (transcript.trim()) {
             setUserAnswer(transcript);
+            toast.success("Recording saved to answer field", {
+                position: "top-right",
+                autoClose: 2000,
+            });
         }
         resetTranscript();
     };
 
     const navigateToScore = async () => {
-
         // Calculate averages
         const total = allMetricsData.length;
         const totalConfidence = allMetricsData.reduce((sum, item) => sum + item.confidence, 0);
@@ -249,15 +288,20 @@ const AIInterviewPage = () => {
                     eyecontact: avgEyeContact.toFixed(2)
                 }
             );
-            alert(response.data.message);
+            toast.success(response.data.message || "Interview completed successfully!", {
+                position: "top-center",
+                autoClose: 3000,
+            });
         } catch (error) {
-            console.error("Error saving answer:", error);
-            alert("Failed to save answer. Please try again.");
+            console.error("Error saving metrics:", error);
+            toast.error("Failed to save interview metrics", {
+                position: "top-center",
+                autoClose: 3000,
+            });
         }
         speakText("Interview completed. Now showing your results.");
         navigate(`/AI-Interivew/${interviewId}/score`);
     };
-
 
     // Draw bounding boxes on canvas
     const drawBoundingBoxes = (faces) => {
@@ -295,11 +339,21 @@ const AIInterviewPage = () => {
 
         socket.on("connect", () => {
             console.log("✅ Connected to socket");
+            toast.success("Connected to monitoring service", {
+                position: "top-right",
+                autoClose: 2000,
+            });
             // Auto-start monitoring when connected
             startMonitoring(socket);
         });
 
-        socket.on("disconnect", () => console.log("❌ Disconnected from socket"));
+        socket.on("disconnect", () => {
+            console.log("❌ Disconnected from socket");
+            toast.error("Disconnected from monitoring service", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        });
 
         socket.on("face_data", (data) => {
             const { faces, total_faces, warnings } = data;
@@ -324,6 +378,7 @@ const AIInterviewPage = () => {
             const detailedMetrics = faces.map(face => ({
                 confidence: face.confidence * 100,
                 eyeContact: face.eye_contact_percentage,
+                timestamp
             }));
 
             // Update all metrics data
@@ -340,7 +395,8 @@ const AIInterviewPage = () => {
                 ...prev.slice(-14),
                 {
                     confidence: avgConfidence,
-                    eyeContact: avgEyeContact
+                    eyeContact: avgEyeContact,
+                    timestamp
                 }
             ]);
         });
