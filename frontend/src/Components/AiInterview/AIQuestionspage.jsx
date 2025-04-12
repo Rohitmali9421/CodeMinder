@@ -313,12 +313,12 @@ const AIInterviewPage = () => {
         faces.forEach((face) => {
             ctx.beginPath();
             ctx.lineWidth = 3;
-            ctx.strokeStyle = face.eye_contact ? "rgba(74, 222, 128, 0.8)" : "rgba(239, 68, 68, 0.8)";
+            ctx.strokeStyle =  "rgba(74, 222, 128, 0.8)" ;
             ctx.rect(face.x, face.y, face.width, face.height);
             ctx.stroke();
 
             // Add confidence label
-            ctx.fillStyle = face.eye_contact ? "rgba(74, 222, 128, 0.8)" : "rgba(239, 68, 68, 0.8)";
+            ctx.fillStyle = "rgba(74, 222, 128, 0.8)" ;
             ctx.font = "bold 14px Arial";
             ctx.fillText(
                 `${(face.confidence * 100).toFixed(1)}% ${face.eye_contact ? "👀" : "👁️"}`,
@@ -339,20 +339,12 @@ const AIInterviewPage = () => {
 
         socket.on("connect", () => {
             console.log("✅ Connected to socket");
-            toast.success("Connected to monitoring service", {
-                position: "top-right",
-                autoClose: 2000,
-            });
             // Auto-start monitoring when connected
             startMonitoring(socket);
         });
 
         socket.on("disconnect", () => {
             console.log("❌ Disconnected from socket");
-            toast.error("Disconnected from monitoring service", {
-                position: "top-right",
-                autoClose: 3000,
-            });
         });
 
         socket.on("face_data", (data) => {

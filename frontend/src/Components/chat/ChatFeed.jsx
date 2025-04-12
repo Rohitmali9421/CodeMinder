@@ -1,4 +1,7 @@
+import { useSelector } from "react-redux";
+
 const ChatFeed = ({ chatHistory, activeGroup }) => {
+    const { user } = useSelector((state) => state.auth);
   return (
     <div className="bg-slate-300 flex-1 p-6 overflow-y-auto text-secondary">
       <h2 className="text-xl font-bold text-black mb-4">{activeGroup} Chat</h2>
@@ -22,7 +25,7 @@ const ChatFeed = ({ chatHistory, activeGroup }) => {
               <p>
                 <img className="h-[40px] w-[40px] rounded-full" src={msg?.profilephoto} alt="" />
               </p>
-              <p className="font-semibold">{msg.user}</p>
+              <p className="font-semibold">{user.name}</p>
             </div>
             <p className="font-semibold">{msg.text}</p>
             <p className="text-xs text-gray-300">{msg.timestamp}</p>
