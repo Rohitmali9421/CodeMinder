@@ -32,7 +32,6 @@ import CommunityChat from './Components/chat/ChatCommunity';
 import ScorePage from './Components/AiInterview/ScorePage';
 import ATSResume from './Components/chat/ATSResume';
 import ChatGemini from './Components/Chatwithgemini/ChatGemini';
-// import ATSResume from './Components/chat/ATSResume';
 
 
 const router = createBrowserRouter(
@@ -50,11 +49,8 @@ const router = createBrowserRouter(
             <Route path="AI-Interivew/:interviewId" element={<AiInterview />} />
             <Route path="AI-Interivew/:interviewId/start" element={<AIQuestionsPage />} />
             <Route path="AI-Interivew/:interviewId/score" element={<ScorePage />} />
-            
-            {/* <Route path="resume" element={<ATSResume />} /> */}
             <Route path="chat" element={<ChatGemini />} />
             
-            {/* <Route path="profile" element={<Resume />} /> */}
 
             {/* Nested Routes for Question Tracker */}
             <Route path="question-tracker" element={<QuestionTracker />}>
