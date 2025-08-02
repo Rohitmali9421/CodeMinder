@@ -16,7 +16,6 @@ const ProfileEdit = () => {
     const [platforms, setPlatforms] = useState({
         github: user?.platforms?.github || "",
         leetcode: user?.platforms?.leetcode || "",
-        geeksforgeeks: user?.platforms?.geeksforgeeks || "",
         codeforces: user?.platforms?.codeforces || "",
     });
 

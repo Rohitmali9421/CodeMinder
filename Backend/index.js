@@ -7,10 +7,9 @@ import UserRouter from "./Routes/User.js";
 import SheetRouter from "./Routes/Sheet.js";
 import NoteRouter from "./Routes/Note.js";
 import ProfileRouter from "./Routes/Profile.js";
-
 import AIInterview from "./Routes/interviewRoutes.js";
 import AnalyzeResume from "./Routes/ResumeAnalyze.js";
-// import { checkAndSendEmails } from "./Controller/Mail.js";
+
 import { authenticateToken } from "./Middlewares/Auth.js";
 import { generateAIResponse } from "./Controller/Aiagent.js";
 import { FetchInternships } from "./Controller/InternshipController.js";
@@ -36,13 +35,10 @@ app.get("/health", (req, res) => {
 app.use("/api/user", UserRouter);
 app.use("/api/sheets", SheetRouter);
 app.use("/api/notes", NoteRouter);
-
 app.use("/api/profile", ProfileRouter);
 app.post("/api/aiagent", authenticateToken, generateAIResponse);
-
 app.use("/api/aiinterview", AIInterview);
 app.use("/api/resume", AnalyzeResume);
-
 app.get("/api/jobs", FetchInternships);
 
 // checkAndSendEmails()

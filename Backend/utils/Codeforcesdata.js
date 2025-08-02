@@ -2,21 +2,19 @@ import axios from "axios";
 
 const CODEFORCES_URL = "https://codeforces.com/api";
 
-// Fetch basic user info including rating and rank
 const fetchCodeforcesUserInfo = async (username) => {
     const response = await axios.get(`${CODEFORCES_URL}/user.info?handles=${username}`);
     if (!response.data || response.data.status !== "OK") throw new Error("User not found");
 
     const user = response.data.result[0];
     return {
-        rating: user.rating || 0, // Current rating
-        maxRating: user.maxRating || 0, // Highest rating achieved
+        rating: user.rating || 0, 
+        maxRating: user.maxRating || 0,
         rank: user.rank || "Unrated",
         maxRank: user.maxRank || "Unrated"
     };
 };
 
-// Fetch problem-solving stats categorized by difficulty
 const fetchCodeforcesStats = async (username) => {
     const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
     if (!response.data || response.data.status !== "OK") throw new Error("User not found");
