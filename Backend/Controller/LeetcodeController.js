@@ -12,12 +12,26 @@ const HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
 };
 
-// Fetch from LeetCode APIs
+// 🔹 Generic LeetCode GraphQL request
+const leetCodeRequest = async (query, variables) => {
+  const response = await axios.post(
+    LEETCODE_URL,
+    { query, variables },
+    { headers: HEADERS }
+  );
+
+  if (!response.data?.data?.matchedUser) {
+    throw new Error("User not found on LeetCode");
+  }
+
+  return response.data.data.matchedUser;
+};
+
+// 🔹 Fetch stats
 const fetchLeetCodeStats = async (username) => {
-  const data = {
-    query: `query userProfile($username: String!) {
+  const query = `
+    query userProfile($username: String!) {
       matchedUser(username: $username) {
-        username
         submitStatsGlobal {
           acSubmissionNum {
             difficulty
@@ -25,113 +39,86 @@ const fetchLeetCodeStats = async (username) => {
           }
         }
       }
-    }`,
-    variables: { username },
-  };
-  const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-  if (!response.data?.data?.matchedUser) throw new Error("User not found");
-  return response.data.data.matchedUser.submitStatsGlobal.acSubmissionNum;
+    }`;
+  const data = await leetCodeRequest(query, { username });
+  return data.submitStatsGlobal.acSubmissionNum;
 };
 
+// 🔹 Fetch submission calendar
 const fetchSubmissionCalendar = async (username) => {
-  const data = {
-    query: `query userProfile($username: String!) {
+  const query = `
+    query userProfile($username: String!) {
       matchedUser(username: $username) {
-        username
         submissionCalendar
       }
-    }`,
-    variables: { username },
-  };
-  const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-  if (!response.data?.data?.matchedUser) throw new Error("User not found");
-  return JSON.parse(response.data.data.matchedUser.submissionCalendar);
+    }`;
+  const data = await leetCodeRequest(query, { username });
+  return JSON.parse(data.submissionCalendar);
 };
 
+// 🔹 Fetch topic distribution
 const fetchLeetCodeTopics = async (username) => {
-  const data = {
-    query: `query userProfile($username: String!) {
+  const query = `
+    query userProfile($username: String!) {
       matchedUser(username: $username) {
-        username
         tagProblemCounts {
           advanced { tagName problemsSolved }
           intermediate { tagName problemsSolved }
           fundamental { tagName problemsSolved }
         }
       }
-    }`,
-    variables: { username },
-  };
-  const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-  if (!response.data?.data?.matchedUser) throw new Error("User not found");
+    }`;
+  const data = await leetCodeRequest(query, { username });
+  const { advanced, intermediate, fundamental } = data.tagProblemCounts;
 
-  const { advanced, intermediate, fundamental } =
-    response.data.data.matchedUser.tagProblemCounts;
-
-  const topicWiseDistribution = [
-    ...advanced,
-    ...intermediate,
-    ...fundamental,
-  ].reduce((acc, topic) => {
-    acc[topic.tagName] = (acc[topic.tagName] || 0) + topic.problemsSolved;
+  return [...advanced, ...intermediate, ...fundamental].reduce((acc, t) => {
+    acc[t.tagName] = (acc[t.tagName] || 0) + t.problemsSolved;
     return acc;
   }, {});
-
-  return topicWiseDistribution;
 };
 
+// 🔹 Fetch awards
 const fetchLeetCodeAwards = async (username) => {
-  const data = {
-    query: `query userProfile($username: String!) {
+  const query = `
+    query userProfile($username: String!) {
       matchedUser(username: $username) {
-        username
         badges {
           id
           displayName
           icon
         }
       }
-    }`,
-    variables: { username },
-  };
-  const response = await axios.post(LEETCODE_URL, data, { headers: HEADERS });
-  if (!response.data?.data?.matchedUser) throw new Error("User not found");
-
-  return response.data.data.matchedUser.badges.map((badge) => ({
-    id: badge.id,
-    name: badge.displayName,
-    icon: badge.icon,
+    }`;
+  const data = await leetCodeRequest(query, { username });
+  return data.badges.map((b) => ({
+    id: b.id,
+    name: b.displayName,
+    icon: b.icon,
   }));
 };
 
-// Controller
+// 🔹 Controller
 const getAllLeetCodeData = async (req, res) => {
   try {
-    const userId = req.user.id;
-
+    const userId = req.user?.id;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
 
-    // 🔍 Fetch user from DB and extract Codeforces handle
     const user = await User.findById(userId);
-    if (!user || !user.platforms || !user.platforms.leetcode) {
+    const username = user?.platforms?.leetcode;
+    if (!username)
       return res
         .status(404)
-        .json({ error: "Leetcode username not found for this user" });
-    }
+        .json({ error: "LeetCode username not found for this user" });
 
-    const username = user.platforms.leetcode;
     const refresh = req.query.refresh === "true";
-
-    if (!username)
-      return res.status(400).json({ error: "Username is required" });
-
     let profile = await LeetCodeData.findOne({ username });
 
     const oneDayOld =
-      profile && new Date() - profile.lastUpdated > 24 * 60 * 60 * 1000;
+      profile && Date.now() - profile.lastUpdated > 24 * 60 * 60 * 1000;
 
     if (!profile || refresh || oneDayOld) {
-      console.log(`🔁 Fetching fresh LeetCode data for ${username}...`);
+      console.log(`Fetching fresh LeetCode data for ${username}...`);
+
       const [stats, submissionCalendar, topicWiseDistribution, awards] =
         await Promise.all([
           fetchLeetCodeStats(username),
@@ -141,7 +128,7 @@ const getAllLeetCodeData = async (req, res) => {
         ]);
 
       const newData = {
-        userId, // ✅ FIX: add userId as required in schema
+        userId,
         username,
         stats,
         submissionCalendar,
@@ -150,15 +137,13 @@ const getAllLeetCodeData = async (req, res) => {
         lastUpdated: new Date(),
       };
 
-      if (!profile) {
-        profile = new LeetCodeData(newData);
-      } else {
-        Object.assign(profile, newData);
-      }
+      profile = profile
+        ? Object.assign(profile, newData)
+        : new LeetCodeData(newData);
 
       await profile.save();
     } else {
-      console.log(`📦 Returning cached LeetCode data for ${username}`);
+      console.log(`Returning cached LeetCode data for ${username}`);
     }
 
     return res.status(200).json({
@@ -170,7 +155,7 @@ const getAllLeetCodeData = async (req, res) => {
       lastUpdated: profile.lastUpdated,
     });
   } catch (error) {
-    console.error("❌ Error fetching LeetCode data:", error.message);
+    console.error("Error fetching LeetCode data:", error.message);
     return res
       .status(500)
       .json({ error: error.message || "Internal Server Error" });

@@ -4,10 +4,14 @@ import User from "../Model/User.js";
 
 const CODEFORCES_URL = "https://codeforces.com/api";
 
-// 📌 Fetch user rating, rank, and max values
+/**
+ * Fetch user rating, rank, and max values
+ */
 const fetchCodeforcesUserInfo = async (username) => {
   const response = await axios.get(`${CODEFORCES_URL}/user.info?handles=${username}`);
-  if (!response.data || response.data.status !== "OK") throw new Error("User not found");
+  if (!response.data || response.data.status !== "OK") {
+    throw new Error("User not found");
+  }
 
   const user = response.data.result[0];
   return {
@@ -18,10 +22,14 @@ const fetchCodeforcesUserInfo = async (username) => {
   };
 };
 
-// 📌 Problem-solving stats by difficulty
+/**
+ * Problem-solving stats by difficulty
+ */
 const fetchCodeforcesStats = async (username) => {
   const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
-  if (!response.data || response.data.status !== "OK") throw new Error("User not found");
+  if (!response.data || response.data.status !== "OK") {
+    throw new Error("User not found");
+  }
 
   const solvedProblems = new Set();
   const difficultyStats = { Easy: 0, Medium: 0, Hard: 0 };
@@ -32,7 +40,7 @@ const fetchCodeforcesStats = async (username) => {
       submission.problem &&
       submission.problem.rating
     ) {
-      const problemId = submission.problem.contestId + "-" + submission.problem.index;
+      const problemId = `${submission.problem.contestId}-${submission.problem.index}`;
       if (!solvedProblems.has(problemId)) {
         solvedProblems.add(problemId);
 
@@ -54,10 +62,14 @@ const fetchCodeforcesStats = async (username) => {
   };
 };
 
-// 📌 Submission heatmap data
+/**
+ * Submission heatmap data
+ */
 const fetchCodeforcesSubmissions = async (username) => {
   const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
-  if (!response.data || response.data.status !== "OK") throw new Error("User not found");
+  if (!response.data || response.data.status !== "OK") {
+    throw new Error("User not found");
+  }
 
   const submissionCalendar = {};
   response.data.result.forEach((submission) => {
@@ -70,10 +82,14 @@ const fetchCodeforcesSubmissions = async (username) => {
   return submissionCalendar;
 };
 
-// 📌 Problems solved by tags/topics
+/**
+ * Problems solved by tags/topics
+ */
 const fetchCodeforcesProblemTags = async (username) => {
   const response = await axios.get(`${CODEFORCES_URL}/user.status?handle=${username}`);
-  if (!response.data || response.data.status !== "OK") throw new Error("User not found");
+  if (!response.data || response.data.status !== "OK") {
+    throw new Error("User not found");
+  }
 
   const topicWiseDistribution = {};
   response.data.result.forEach((submission) => {
@@ -87,13 +103,17 @@ const fetchCodeforcesProblemTags = async (username) => {
   return { topicWiseDistribution };
 };
 
-// 🚀 Main controller with caching + manual refresh
+/**
+ * Main controller: Get all Codeforces data with caching and optional refresh
+ */
 const getAllCodeforcesData = async (req, res) => {
   try {
     const userId = req.user.id;
     const refresh = req.query.refresh === "true";
 
-    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
 
     const user = await User.findById(userId);
     if (!user || !user.platforms || !user.platforms.codeforces) {
@@ -102,16 +122,19 @@ const getAllCodeforcesData = async (req, res) => {
 
     const username = user.platforms.codeforces;
 
+    // Check cache validity (6 hours)
     const cached = await CodeforcesData.findOne({ userId });
-    const isCacheValid = cached && !refresh && new Date() - cached.lastUpdated < 6 * 60 * 60 * 1000;
+    const isCacheValid =
+      cached && !refresh && new Date() - cached.lastUpdated < 6 * 60 * 60 * 1000;
 
     if (isCacheValid) {
-      console.log("✅ Serving Codeforces data from cache");
+      console.log("Serving Codeforces data from cache");
       return res.status(200).json(cached.data);
     }
 
-    console.log(`🔄 Fetching fresh Codeforces data for ${username}`);
+    console.log(`Fetching fresh Codeforces data for user: ${username}`);
 
+    // Fetch fresh data
     const [userInfo, stats, submissionCalendar, topicAnalysisStats] = await Promise.all([
       fetchCodeforcesUserInfo(username),
       fetchCodeforcesStats(username),
@@ -130,6 +153,7 @@ const getAllCodeforcesData = async (req, res) => {
       topicAnalysisStats,
     };
 
+    // Upsert in DB
     await CodeforcesData.findOneAndUpdate(
       { userId },
       { data: finalData, lastUpdated: new Date() },
@@ -138,7 +162,7 @@ const getAllCodeforcesData = async (req, res) => {
 
     return res.status(200).json(finalData);
   } catch (error) {
-    console.error("❌ Codeforces Fetch Error:", error.message);
+    console.error("Codeforces Fetch Error:", error.message);
     return res.status(500).json({ error: error.message });
   }
 };

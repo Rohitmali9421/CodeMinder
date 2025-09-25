@@ -12,7 +12,6 @@ import AnalyzeResume from "./Routes/ResumeAnalyze.js";
 
 import { authenticateToken } from "./Middlewares/Auth.js";
 import { generateAIResponse } from "./Controller/Aiagent.js";
-import { FetchInternships } from "./Controller/InternshipController.js";
 import { checkAndSendEmails } from "./Controller/Mail.js";
 dotenv.config();
 
@@ -39,7 +38,6 @@ app.use("/api/profile", ProfileRouter);
 app.post("/api/aiagent", authenticateToken, generateAIResponse);
 app.use("/api/aiinterview", AIInterview);
 app.use("/api/resume", AnalyzeResume);
-app.get("/api/jobs", FetchInternships);
 
 // checkAndSendEmails()
 app.listen(PORT, () => {

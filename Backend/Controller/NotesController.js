@@ -1,6 +1,31 @@
 import mongoose from "mongoose";
 import Note from "../Model/Notes.js";
 
+// Utility: check valid Mongo ID
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+// Utility: format note for response
+const formatNoteResponse = (note) => ({
+  noteId: note._id,
+  type: note.type,
+  content: note.content,
+  ...(note.type === "question" && note.question_id
+    ? {
+        question: {
+          id: note.question_id._id,
+          title: note.question_id.title,
+        },
+      }
+    : {}),
+  ...(note.type === "general" ? { noteName: note.noteName } : {}),
+});
+
+// Utility: error handler
+const handleError = (res, error, message = "Server error") => {
+  console.error(message, error);
+  return res.status(500).json({ success: false, message });
+};
+
 // Create a new note
 const createNote = async (req, res) => {
   try {
@@ -28,7 +53,7 @@ const createNote = async (req, res) => {
       });
     }
 
-    const newNote = new Note({
+    const newNote = await Note.create({
       user: userId,
       type,
       content,
@@ -36,21 +61,18 @@ const createNote = async (req, res) => {
       noteName: type === "general" ? noteName : undefined,
     });
 
-    await newNote.save();
-
     return res.status(201).json({
       success: true,
       message: "Note created successfully",
       note: formatNoteResponse(newNote),
     });
   } catch (error) {
-    console.error("Error creating note:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+    return handleError(res, error, "Error creating note");
   }
 };
 
 // Update a note
-const handleUpdateNotes = async (req, res) => {
+const updateNote = async (req, res) => {
   try {
     const { noteId, content, noteName } = req.body;
     const userId = req.user.id;
@@ -62,26 +84,20 @@ const handleUpdateNotes = async (req, res) => {
       });
     }
 
-    const note = await Note.findById(noteId);
-
-    if (!note) {
-      return res.status(404).json({
-        success: false,
-        message: "Note not found",
-      });
+    if (!isValidObjectId(noteId)) {
+      return res.status(400).json({ success: false, message: "Invalid note ID" });
     }
 
+    const note = await Note.findById(noteId);
+    if (!note) {
+      return res.status(404).json({ success: false, message: "Note not found" });
+    }
     if (note.user.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized",
-      });
+      return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
     note.content = content;
-    if (note.type === "general" && noteName) {
-      note.noteName = noteName;
-    }
+    if (note.type === "general" && noteName) note.noteName = noteName;
 
     await note.save();
 
@@ -91,19 +107,14 @@ const handleUpdateNotes = async (req, res) => {
       note: formatNoteResponse(note),
     });
   } catch (error) {
-    console.error("Error updating note:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    return handleError(res, error, "Error updating note");
   }
 };
 
 // Get user's general notes
-const getUserNotes = async (req, res) => {
+const getGeneralNotes = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const notes = await Note.find({ user: userId, type: "general" });
+    const notes = await Note.find({ user: req.user.id, type: "general" });
 
     return res.status(200).json({
       success: true,
@@ -113,19 +124,15 @@ const getUserNotes = async (req, res) => {
         : "No general notes found",
     });
   } catch (error) {
-    console.error("Error fetching general notes:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return handleError(res, error, "Error fetching general notes");
   }
 };
 
 // Get user's question notes
-const getUserQuestionNotes = async (req, res) => {
+const getQuestionNotes = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const notes = await Note.find({ user: userId, type: "question" }).populate(
-      "question_id",
-      "title description"
-    );
+    const notes = await Note.find({ user: req.user.id, type: "question" })
+      .populate("question_id", "title description");
 
     return res.status(200).json({
       success: true,
@@ -135,22 +142,18 @@ const getUserQuestionNotes = async (req, res) => {
         : "No question notes found",
     });
   } catch (error) {
-    console.error("Error fetching question notes:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return handleError(res, error, "Error fetching question notes");
   }
 };
 
-// Get note by ID (with question title and description if applicable)
-const handleGetNoteById = async (req, res) => {
+// Get single note by ID
+const getNoteById = async (req, res) => {
   try {
     const { noteId } = req.params;
     const userId = req.user.id;
 
-    if (!mongoose.Types.ObjectId.isValid(noteId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid note ID format",
-      });
+    if (!isValidObjectId(noteId)) {
+      return res.status(400).json({ success: false, message: "Invalid note ID" });
     }
 
     const note = await Note.findById(noteId).populate(
@@ -159,16 +162,10 @@ const handleGetNoteById = async (req, res) => {
     );
 
     if (!note) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Note not found" });
+      return res.status(404).json({ success: false, message: "Note not found" });
     }
-
     if (note.user.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized",
-      });
+      return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
     return res.status(200).json({
@@ -177,61 +174,26 @@ const handleGetNoteById = async (req, res) => {
       note: formatNoteResponse(note),
     });
   } catch (error) {
-    console.error("Error fetching note:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    return handleError(res, error, "Error fetching note");
   }
 };
 
-// Format response
-const formatNoteResponse = (note) => ({
-  noteId: note._id,
-  type: note.type,
-  content: note.content,
-  ...(note.type === "question" && note.question_id
-    ? {
-        question: {
-          id: note.question_id._id,
-          title: note.question_id.title,
-        },
-      }
-    : {}),
-  ...(note.type === "general"
-    ? {
-        noteName: note.noteName,
-      }
-    : {}),
-});
-
 // Delete a note
-const handleDeleteNote = async (req, res) => {
+const deleteNote = async (req, res) => {
   try {
     const { noteId } = req.params;
     const userId = req.user.id;
 
-    if (!mongoose.Types.ObjectId.isValid(noteId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid note ID format",
-      });
+    if (!isValidObjectId(noteId)) {
+      return res.status(400).json({ success: false, message: "Invalid note ID" });
     }
 
     const note = await Note.findById(noteId);
-
     if (!note) {
-      return res.status(404).json({
-        success: false,
-        message: "Note not found",
-      });
+      return res.status(404).json({ success: false, message: "Note not found" });
     }
-
     if (note.user.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized",
-      });
+      return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
     await Note.findByIdAndDelete(noteId);
@@ -241,20 +203,15 @@ const handleDeleteNote = async (req, res) => {
       message: "Note deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting note:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    return handleError(res, error, "Error deleting note");
   }
 };
 
-
 export {
   createNote,
-  handleUpdateNotes,
-  handleGetNoteById,
-  getUserNotes,
-  getUserQuestionNotes,
-  handleDeleteNote,
+  updateNote,
+  getGeneralNotes,
+  getQuestionNotes,
+  getNoteById,
+  deleteNote,
 };

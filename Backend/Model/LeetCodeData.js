@@ -12,6 +12,7 @@ const leetCodeDataSchema = new mongoose.Schema({
   submissionCalendar: mongoose.Schema.Types.Mixed,
   topicAnalysisStats: mongoose.Schema.Types.Mixed,
   awards: Array,
+  
   lastUpdated: { type: Date, default: Date.now },
 });
 
