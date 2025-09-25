@@ -1,7 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 import {
-  FaExclamationTriangle,
   FaSpinner,
   FaCheckCircle,
   FaFilePdf,
@@ -18,6 +17,7 @@ function ATSResume() {
   const [error, setError] = useState("");
   const [category, setCategory] = useState("React Developer");
   const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -26,6 +26,7 @@ function ATSResume() {
       setFileName(selectedFile.name);
       setError("");
       setResponse(null);
+      setJobs([]);
     }
   };
 
@@ -47,22 +48,24 @@ function ATSResume() {
       formData.append("file", file);
       formData.append("category", category);
 
+      // Resume analysis API
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/resume/analyze`,
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       setResponse(res.data);
 
-      const jobRes = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/jobs?category=${category}`
-      );
-      setJobs(jobRes.data);
+      // Fetch jobs asynchronously
+      setLoadingJobs(true);
+      axios
+        .get(`https://job-scraper-ei4c.onrender.com/jobs?category=${category}`)
+        .then((jobRes) => {
+          setJobs(jobRes.data);
+        })
+        .catch(() => setJobs([]))
+        .finally(() => setLoadingJobs(false));
     } catch (err) {
       console.error("Error:", err);
       setError("Something went wrong. Please try again.");
@@ -74,16 +77,6 @@ function ATSResume() {
   return (
     <div className="min-h-screen mt-20 bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        {/* <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-3 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
-            Smart Resume Analyzer
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Get instant feedback on your resume's ATS compatibility and discover relevant job opportunities.
-          </p>
-        </div> */}
-
         {/* Upload Card */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
           <div className="p-6 sm:p-8">
@@ -169,7 +162,11 @@ function ATSResume() {
               <button
                 type="submit"
                 disabled={loading || !file}
-                className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${loading || !file ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'} transition-colors duration-200`}
+                className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                  loading || !file
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                } transition-colors duration-200`}
               >
                 {loading ? (
                   <>
@@ -202,33 +199,30 @@ function ATSResume() {
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700">ATS Compatibility</span>
                     <span className="text-sm font-semibold text-blue-600">
-                      {response.matchPercentage}% Match
+                      {response.evaluation.matchPercentage}% Match
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
-                      className={`h-2.5 rounded-full ${response.matchPercentage >= 70 ? 'bg-green-500' : response.matchPercentage >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                      style={{ width: `${response.matchPercentage}%` }}
+                      className={`h-2.5 rounded-full ${
+                        response.evaluation.matchPercentage >= 70
+                          ? "bg-green-500"
+                          : response.evaluation.matchPercentage >= 40
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                      style={{ width: `${response.evaluation.matchPercentage}%` }}
                     ></div>
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Your resume matches <span className="font-semibold">{response.matchPercentage}%</span> of the typical requirements for a <span className="font-semibold">"{category}"</span> role.
-                  </p>
                 </div>
 
                 {/* Strengths */}
                 <div className="mb-8">
-                  <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3">
-                      ✓
-                    </span>
-                    Strengths
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Strengths</h3>
                   <ul className="space-y-3">
-                    {response.strengths.map((point, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="flex-shrink-0 h-5 w-5 text-green-500 mt-0.5 mr-2">•</span>
-                        <span className="text-gray-700">{point}</span>
+                    {response.evaluation.strengths.map((point, idx) => (
+                      <li key={idx} className="text-gray-700 flex items-start">
+                        • <span className="ml-2">{point}</span>
                       </li>
                     ))}
                   </ul>
@@ -236,14 +230,9 @@ function ATSResume() {
 
                 {/* Missing Keywords */}
                 <div className="mb-8">
-                  <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                    <span className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-3">
-                      !
-                    </span>
-                    Missing Keywords
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Missing Keywords</h3>
                   <div className="flex flex-wrap gap-2">
-                    {response.missingKeywords.map((keyword, idx) => (
+                    {response.evaluation.missingKeywords.map((keyword, idx) => (
                       <span
                         key={idx}
                         className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
@@ -256,17 +245,11 @@ function ATSResume() {
 
                 {/* Suggestions */}
                 <div className="mb-6">
-                  <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                    <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">
-                      💡
-                    </span>
-                    Improvement Suggestions
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Improvement Suggestions</h3>
                   <ul className="space-y-3">
-                    {response.suggestions.map((suggestion, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="flex-shrink-0 h-5 w-5 text-blue-500 mt-0.5 mr-2">•</span>
-                        <span className="text-gray-700">{suggestion}</span>
+                    {response.evaluation.suggestions.map((suggestion, idx) => (
+                      <li key={idx} className="text-gray-700 flex items-start">
+                        • <span className="ml-2">{suggestion}</span>
                       </li>
                     ))}
                   </ul>
@@ -274,20 +257,21 @@ function ATSResume() {
 
                 {/* Summary */}
                 <div>
-                  <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                    <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3">
-                      📄
-                    </span>
-                    Summary
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
                   <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
-                    {response.summary}
+                    {response.evaluation.summary}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Jobs Section */}
+            {loadingJobs && (
+              <div className="text-center py-6 text-gray-500">
+                <FaSpinner className="animate-spin inline-block mr-2" /> Loading jobs...
+              </div>
+            )}
+
             {jobs.length > 0 && (
               <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="p-6 sm:p-8">
