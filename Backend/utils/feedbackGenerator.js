@@ -3,7 +3,7 @@ const GEMINI_API = process.env.GEMINI_API_KEY
 export const generateAIAnalysis = async (question, aiAnswer, userAnswer) => {
 
   const genAI = new GoogleGenerativeAI(GEMINI_API);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `Compare the correct answer: "${aiAnswer}" with the user's answer: "${userAnswer}". 
   Provide structured feedback in 2-3 sentences and a score out of 10.

@@ -5,7 +5,7 @@ const GEMINI_API = process.env.GEMINI_API_KEY
 
 export const generateQuestions = async (jobRole, jobDescription, experienceLevel) => {
   const genAI = new GoogleGenerativeAI(GEMINI_API);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `Act as a senior ${jobRole}. Generate 7-15 technical and behavioral interview questions based on ${jobDescription}  for an ${experienceLevel}-level of experience have that candidate. Format the output strictly as a JSON object with a "questions" key containing an array of objects, where each object has a "question" and "answer" field. Do not include any markdown formatting or additional text`
 
