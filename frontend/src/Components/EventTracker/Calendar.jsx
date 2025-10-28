@@ -3,7 +3,6 @@ import { useContests } from '../../hooks/useContests';
 import CalendarHeader from './CalendarHeader';
 import Filters from './Filters';
 import CalendarGrid from './CalendarGrid';
-import { Loader2 } from 'lucide-react';
 import Loading from '../Loading';
 
 export default function Calendar() {

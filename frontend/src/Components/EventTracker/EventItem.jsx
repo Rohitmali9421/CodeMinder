@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
+} from "../ui/card";
 import {
   Calendar,
   Clock,
@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   TooltipContent,
-} from "@/components/ui/tooltip";
+} from "../ui/tooltip";
 
 // Utility to format time range
 const formatTimeRange = (start, end) => {
