@@ -77,10 +77,10 @@ const router = createBrowserRouter(
           <Route path="explore/sheet/:id" element={<SheetDetails />} />
         </Route>
 
-        {/* Profile Edit */}
+        
         <Route path="profile/edit" element={<ProfileEdit />} />
 
-        {/* Profile Tracker */}
+        
         <Route path="profile" element={<ProfileTracker />}>
           <Route index element={<LeetCodeStats />} />
           <Route path="leetcode" element={<LeetCodeStats />} />

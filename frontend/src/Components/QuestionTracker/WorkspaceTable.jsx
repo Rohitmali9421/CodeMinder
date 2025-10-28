@@ -17,7 +17,7 @@ import axios from "axios";
 import { useSelector } from "react-redux";
 import { Editor } from "@tinymce/tinymce-react";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import Loading from "../Loading";
 
 export default function WorkspaceTable() {
   const [questions, setQuestions] = useState([]);
@@ -102,7 +102,7 @@ export default function WorkspaceTable() {
   });
 
   if (loading) {
-    return <p className="text-center text-gray-500">Loading solved questions...</p>;
+    return <Loading/>;
   }
 
   return (

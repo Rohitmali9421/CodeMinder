@@ -9,10 +9,6 @@ function LandingPage() {
         <div className='  w-full overflow-x-hidden'>
             <HeroSection />
             <PrepSimplifier />
-            {/* <CodingPlatform />
-            
-            <CodingPortfolio />
-            <FAQ />      */}
         </div>
     )
 }
