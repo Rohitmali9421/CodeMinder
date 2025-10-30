@@ -27,8 +27,8 @@ export default function JobForm() {
                 `${import.meta.env.VITE_API_URL}/api/aiinterview/create`,
                 data
             );
-            dispatch(setAIquestions(response.data.newInterview));
-            navigate(`/AI-Interivew/${response?.data?.newInterview._id}`);
+            dispatch(setAIquestions(response.data.interview));
+            navigate(`/AI-Interivew/${response?.data?.interviewId}`);
         } catch (error) {
             console.error(error);
             setSubmitError("Failed to create interview. Please try again.");

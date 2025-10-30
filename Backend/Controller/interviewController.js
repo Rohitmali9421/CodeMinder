@@ -86,7 +86,7 @@ export const storeUserAnswer = async (req, res) => {
       question.aiAnswer,
       userAnswer
     );
-
+    // console.log(feedback ,score)
     question.aiFeedback = feedback;
     question.score = score;
 
